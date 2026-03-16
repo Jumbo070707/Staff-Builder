@@ -898,10 +898,13 @@ function fteStr(hrs) {
 }
 
 function resourceCost(r) {
-  // Total cost = hourly rate × hours/wk × weeks engaged
+  // Total cost = sum across allocation segments: rate × hrs/wk × segment weeks
+  // Accounts for splits so a 100%→50% change mid-project costs correctly
   if (!r.rate || r.rate <= 0) return 0;
-  const weeks = Math.max(0, r.end - r.start + 1);
-  return r.rate * r.hrs * weeks;
+  return buildSegments(r).reduce((sum, seg) => {
+    const weeks = Math.max(0, seg.end - seg.start + 1);
+    return sum + r.rate * seg.hrs * weeks;
+  }, 0);
 }
 
 function formatCost(val, currency) {
