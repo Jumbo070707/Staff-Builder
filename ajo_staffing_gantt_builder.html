@@ -421,7 +421,6 @@ input[type=checkbox] {
     <div class="toolbar-divider"></div>
     <div class="toolbar-group">
       <button class="btn btn-primary" onclick="addRow()">+ Add role</button>
-      <button class="btn btn-danger-ghost btn-sm" onclick="clearBoard()">Clear board</button>
     </div>
     <div class="toolbar-spacer"></div>
     <div class="toolbar-group">
@@ -447,6 +446,7 @@ input[type=checkbox] {
         <div style="display:flex;gap:6px;align-items:center">
           <span class="info-pill" id="active-count-pill">15 active</span>
           <button class="btn btn-sm btn-ghost" onclick="addRow()">+ Add role</button>
+          <button class="btn btn-sm" onclick="clearBoard()" style="color:var(--danger);border-color:var(--danger);background:transparent" onmouseover="this.style.background='var(--bci-red-100)'" onmouseout="this.style.background='transparent'">Clear board</button>
         </div>
       </div>
       <div class="resource-table-wrap">
