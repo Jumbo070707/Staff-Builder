@@ -1341,11 +1341,12 @@ function renderChart() {
       fill: p.color, opacity: '0.05'
     }));
 
-    // Phase label — adaptive font size + clip so text never bleeds out
+    // Phase label — word-wrap + adaptive font size + clip
     const PAD = 6;
     const availW = Math.max(0, w - PAD * 2);
+    const cx = x + w / 2;
 
-    // ClipPath per phase band
+    // ClipPath per phase band (hard-edge fallback)
     const phClipId = `ph-clip-${pi}`;
     const phClip = el('clipPath', { id: phClipId });
     phClip.appendChild(el('rect', { x: x + PAD, y: 0, width: availW, height: PH_H }));
@@ -1356,25 +1357,52 @@ function renderChart() {
       : `W${pStart}–W${pEnd}`;
     const showDur = w > 60;
 
-    // Adaptive font size: estimate ~6px per char at 10.5px; scale down to fit, min 6.5px
-    const MAX_FS = 10.5, MIN_FS = 6.5, CHAR_W = 6.2;
-    const nameFit = availW / (p.name.length * CHAR_W) * MAX_FS;
-    const nameFontSize = Math.min(MAX_FS, Math.max(MIN_FS, nameFit)).toFixed(1);
+    // Word-wrap helper: greedy line builder at given charW
+    function wrapWords(text, maxW, charW) {
+      const words = text.split(' ');
+      const lines = [];
+      let cur = '';
+      for (const word of words) {
+        const test = cur ? cur + ' ' + word : word;
+        if (test.length * charW <= maxW) { cur = test; }
+        else { if (cur) lines.push(cur); cur = word; }
+      }
+      if (cur) lines.push(cur);
+      return lines;
+    }
 
-    svg.appendChild(el('text', {
-      x: x + w / 2,
-      y: showDur ? PH_H * 0.38 : PH_H / 2,
+    const MAX_FS = 10.5, CHAR_W = 6.2, LINE_H = 12;
+    // Try single line with adaptive size; if font would shrink below 8.5px, wrap instead
+    const singleFit = p.name.length ? availW / (p.name.length * CHAR_W) * MAX_FS : MAX_FS;
+    const useWrap   = singleFit < 8.5 && availW > 20;
+    const nameLines = useWrap ? wrapWords(p.name, availW, CHAR_W) : [p.name];
+    const nameFontSize = useWrap
+      ? MAX_FS
+      : Math.min(MAX_FS, Math.max(6.5, singleFit));
+
+    // Vertical layout: centre name block within the usable zone
+    const usableH = showDur ? PH_H * 0.70 : PH_H;
+    const blockH  = nameLines.length * LINE_H;
+    const nameStartY = (usableH - blockH) / 2 + LINE_H * 0.55;
+
+    const nameEl = el('text', {
       'text-anchor': 'middle', 'dominant-baseline': 'central',
-      'font-size': nameFontSize, 'font-weight': '700', fill: 'rgba(255,255,255,0.97)',
-      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.01em',
+      'font-size': nameFontSize.toFixed(1), 'font-weight': '700',
+      fill: 'rgba(255,255,255,0.97)',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)',
+      'letter-spacing': '0.01em',
       'clip-path': `url(#${phClipId})`
-    }, p.name));
+    });
+    nameLines.forEach((line, i) => {
+      nameEl.appendChild(el('tspan', { x: cx, y: nameStartY + i * LINE_H }, line));
+    });
+    svg.appendChild(nameEl);
 
     if (showDur) {
       const durFit = availW / (durLabel.length * 5.5) * 8;
       const durFontSize = Math.min(8, Math.max(6, durFit)).toFixed(1);
       svg.appendChild(el('text', {
-        x: x + w / 2, y: PH_H * 0.76,
+        x: cx, y: PH_H * 0.88,
         'text-anchor': 'middle', 'dominant-baseline': 'central',
         'font-size': durFontSize, 'font-weight': '500', fill: 'rgba(255,255,255,0.52)',
         'font-family': 'var(--font-sans,system-ui,sans-serif)',
