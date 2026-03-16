@@ -929,8 +929,12 @@ function resetState() {
 //  Clear board
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function clearBoard() {
-  if (!confirm('Remove all resources from the board? This cannot be undone.')) return;
-  state.resources = [];
+  if (!confirm('Clear the entire board? This will remove all resources, phases, and milestones. This cannot be undone.')) return;
+  state.resources  = [];
+  state.phases     = [];
+  state.milestones = [];
+  renderPhaseList();
+  renderMilestoneList();
   scheduleFullRender();
 }
 
@@ -980,6 +984,9 @@ function loadTemplate(id) {
   milestoneUid = Math.max(milestoneUid, msMax) + 1;
   closeModal('templates-modal');
   syncSettingsUI();
+  renderPhaseList();
+  renderTypeList();
+  renderMilestoneList();
   scheduleFullRender();
 }
 
