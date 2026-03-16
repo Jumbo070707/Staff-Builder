@@ -859,8 +859,10 @@ function updateWeeksPill() {
 function updateStats() {
   const active = state.resources.filter(r => r.active);
   document.getElementById('stat-resources').textContent = active.length;
-  document.getElementById('stat-weeks').textContent     = state.totalWeeks;
-  // Keep the weeks-pill in toolbar in sync too
+  // Weeks = actual span in use (max end week of active resources); 0 when board is empty
+  const activeMaxWk = active.length ? Math.max(...active.map(r => r.end || 0)) : 0;
+  document.getElementById('stat-weeks').textContent = activeMaxWk;
+  // Keep the weeks-pill (project setting) in toolbar in sync
   updateWeeksPill();
 
   let peakFTE = 0;
@@ -2208,6 +2210,7 @@ document.addEventListener('keydown', e => {
 //  Init
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 loadState();
+syncSettingsUI();
 scheduleFullRender();
 </script>
 </body>
