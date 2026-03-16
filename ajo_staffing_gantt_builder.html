@@ -1968,29 +1968,33 @@ function renderChart() {
 
   // ── Legend ──
   const legend = document.getElementById('legend-area');
+
+  // One entry per type (colour identity only)
   const typeItems = state.types.map(t => `
     <div class="legend-item">
       <div class="legend-swatch" style="background:${t.color};opacity:0.85"></div>
-      ${esc(t.name)} (100%)
-    </div>
-    <div class="legend-item">
-      <div class="legend-swatch" style="background:${t.color};opacity:0.52"></div>
-      ${esc(t.name)} (50%)
-    </div>
-    <div class="legend-item">
-      <div class="legend-swatch" style="background:${t.color};opacity:0.28"></div>
-      ${esc(t.name)} (25%)
+      ${esc(t.name)}
     </div>
   `).join('');
 
-  const phaseItems = state.phases.map(p => `
+  // Three allocation levels using the first type colour as a reference swatch
+  const refColor = state.types[0]?.color || '#2563EB';
+  const allocItems = `
     <div class="legend-item">
-      <div class="legend-swatch" style="background:${p.color}"></div>
-      ${esc(p.name)}
+      <div class="legend-swatch" style="background:${refColor};opacity:0.85"></div>
+      100% allocation
     </div>
-  `).join('');
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:${refColor};opacity:0.52;height:6px;margin:1px 0"></div>
+      50% allocation
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:${refColor};opacity:0.28;height:4px;margin:2px 0"></div>
+      25% allocation
+    </div>
+  `;
 
-  legend.innerHTML = typeItems + '<div class="legend-sep"></div>' + phaseItems;
+  legend.innerHTML = typeItems + '<div class="legend-sep"></div>' + allocItems;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
