@@ -620,6 +620,7 @@ input[type=checkbox] {
                 subIn.value = state.subtitle;
               }
               updateWeeksPill();
+              const sw = document.getElementById('stat-weeks'); if (sw) sw.textContent = state.totalWeeks;
               scheduleFullRender();
             ">
           <div class="field-hint">Sets the timeline length</div>
@@ -859,10 +860,8 @@ function updateWeeksPill() {
 function updateStats() {
   const active = state.resources.filter(r => r.active);
   document.getElementById('stat-resources').textContent = active.length;
-  // Weeks = actual span in use (max end week of active resources); 0 when board is empty
-  const activeMaxWk = active.length ? Math.max(...active.map(r => r.end || 0)) : 0;
-  document.getElementById('stat-weeks').textContent = activeMaxWk;
-  // Keep the weeks-pill (project setting) in toolbar in sync
+  // Weeks = program total weeks (project setting)
+  document.getElementById('stat-weeks').textContent = state.totalWeeks;
   updateWeeksPill();
 
   let peakFTE = 0;
