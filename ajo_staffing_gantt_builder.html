@@ -409,7 +409,7 @@ input[type=checkbox] {
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polygon points="6,1 11,6 6,11 1,6" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
         Milestones
       </button>
-      <button class="btn" onclick="openModal('settings-modal')">
+      <button class="btn" onclick="openModal('settings-modal'); syncSettingsUI()">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M6 1v1M6 10v1M1 6h1M10 6h1M2.5 2.5l.7.7M8.8 8.8l.7.7M9.5 2.5l-.7.7M3.2 8.8l-.7.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
         Settings
       </button>
@@ -662,6 +662,7 @@ input[type=checkbox] {
       </div>
     </div>
     <div class="modal-footer">
+      <button class="btn btn-danger-ghost btn-sm" onclick="resetState()" style="margin-right:auto">Reset to defaults</button>
       <button class="btn btn-primary" onclick="closeModal('settings-modal')">Done</button>
     </div>
   </div>
@@ -854,16 +855,56 @@ function updateStats() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Persistence (localStorage)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const LS_KEY = 'bci-staff-builder-v1';
+
+function saveState() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    // Merge saved values into state (preserves any new default keys)
+    Object.assign(state, saved);
+    // Re-sync uid counters above the highest ID in the restored data
+    const resMax = state.resources.reduce((m, r) => Math.max(m, +r.id || 0), 0);
+    const phMax  = state.phases.reduce((m, p) => Math.max(m, +(String(p.id).replace(/\D/g,'')) || 0), 0);
+    const tyMax  = state.types.reduce((m, t)  => Math.max(m, +(String(t.id).replace(/\D/g,'')) || 0), 0);
+    const msMax  = state.milestones.reduce((m, ms) => Math.max(m, +ms.id || 0), 0);
+    uid           = Math.max(uid, resMax, phMax, tyMax) + 1;
+    milestoneUid  = Math.max(milestoneUid, msMax) + 1;
+    return true;
+  } catch(e) { return false; }
+}
+
+function resetState() {
+  if (!confirm('Reset all data to defaults? This cannot be undone.')) return;
+  localStorage.removeItem(LS_KEY);
+  location.reload();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  Render scheduling
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 let _chartTimer = null;
 let _fullTimer  = null;
+let _saveTimer  = null;
+
+function _debouncedSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(saveState, 800);
+}
 
 function scheduleChartRender(delay = 0) {
   clearTimeout(_chartTimer);
   _chartTimer = setTimeout(() => {
     renderChart();
     updateStats();
+    _debouncedSave();
   }, delay);
 }
 
@@ -874,6 +915,7 @@ function scheduleFullRender(delay = 0) {
     renderEditor();
     renderChart();
     updateStats();
+    _debouncedSave();
   }, delay);
 }
 
@@ -1995,6 +2037,22 @@ function openModal(id) {
   document.getElementById(id).classList.add('open');
 }
 
+// Sync Settings modal dropdowns/inputs to current state (needed after loadState)
+function syncSettingsUI() {
+  const s = state;
+  const v = (id, val) => { const el = document.getElementById(id); if (el) el.value = String(val); };
+  v('set-weeks',      s.totalWeeks);
+  v('set-startdate',  s.startDate || '');
+  v('set-wklabel',    s.weekLabelInterval || 4);
+  v('set-capacity',   s.showCapacity);
+  v('set-rowh',       s.rowH || 36);
+  v('set-barlabels',  s.barLabels || 'both');
+  v('set-showcost',   s.showCost);
+  v('set-currency',   s.currency || 'USD');
+  v('set-swimlanes',  s.swimlanes);
+  v('set-todaymarker', s.showTodayMarker);
+}
+
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
 }
@@ -2012,6 +2070,7 @@ document.addEventListener('keydown', e => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  Init
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+loadState();
 scheduleFullRender();
 </script>
 </body>
