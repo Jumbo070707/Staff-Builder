@@ -873,7 +873,7 @@ function applyTheme(dark) {
 function toggleDarkMode() {
   state.darkMode = !state.darkMode;
   applyTheme(state.darkMode);
-  _debouncedSave();
+  scheduleChartRender();
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
