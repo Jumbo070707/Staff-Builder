@@ -1341,27 +1341,44 @@ function renderChart() {
       fill: p.color, opacity: '0.05'
     }));
 
-    // Phase label — centered or with sub-label if space allows
-    const abbr = p.name.length > 22 ? p.name.slice(0, 20) + '…' : p.name;
+    // Phase label — adaptive font size + clip so text never bleeds out
+    const PAD = 6;
+    const availW = Math.max(0, w - PAD * 2);
+
+    // ClipPath per phase band
+    const phClipId = `ph-clip-${pi}`;
+    const phClip = el('clipPath', { id: phClipId });
+    phClip.appendChild(el('rect', { x: x + PAD, y: 0, width: availW, height: PH_H }));
+    defs.appendChild(phClip);
+
     const durLabel = state.startDate
       ? `${wkLabel(pStart)} – ${wkLabel(pEnd)}`
       : `W${pStart}–W${pEnd}`;
     const showDur = w > 60;
 
+    // Adaptive font size: estimate ~6px per char at 10.5px; scale down to fit, min 6.5px
+    const MAX_FS = 10.5, MIN_FS = 6.5, CHAR_W = 6.2;
+    const nameFit = availW / (p.name.length * CHAR_W) * MAX_FS;
+    const nameFontSize = Math.min(MAX_FS, Math.max(MIN_FS, nameFit)).toFixed(1);
+
     svg.appendChild(el('text', {
       x: x + w / 2,
       y: showDur ? PH_H * 0.38 : PH_H / 2,
       'text-anchor': 'middle', 'dominant-baseline': 'central',
-      'font-size': '10.5', 'font-weight': '700', fill: 'rgba(255,255,255,0.97)',
-      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.01em'
-    }, abbr));
+      'font-size': nameFontSize, 'font-weight': '700', fill: 'rgba(255,255,255,0.97)',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.01em',
+      'clip-path': `url(#${phClipId})`
+    }, p.name));
 
     if (showDur) {
+      const durFit = availW / (durLabel.length * 5.5) * 8;
+      const durFontSize = Math.min(8, Math.max(6, durFit)).toFixed(1);
       svg.appendChild(el('text', {
         x: x + w / 2, y: PH_H * 0.76,
         'text-anchor': 'middle', 'dominant-baseline': 'central',
-        'font-size': '8', 'font-weight': '500', fill: 'rgba(255,255,255,0.52)',
-        'font-family': 'var(--font-sans,system-ui,sans-serif)'
+        'font-size': durFontSize, 'font-weight': '500', fill: 'rgba(255,255,255,0.52)',
+        'font-family': 'var(--font-sans,system-ui,sans-serif)',
+        'clip-path': `url(#${phClipId})`
       }, durLabel));
     }
 
