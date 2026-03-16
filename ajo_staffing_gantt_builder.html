@@ -1659,116 +1659,53 @@ function exportExcel() {
   function ec(styleID, ma=0)    { return cell(styleID,'',null,ma); }
 
   // ── Styles ──
+  // Excel SpreadsheetML requires strict child element order inside <Style>:
+  // Alignment → Borders → Font → Interior  (wrong order = "Style" import error)
+  function mkStyle(id, {align='', borders='', font='', interior=''} = {}) {
+    return `<Style ss:ID="${id}">
+      ${align    ? `<Alignment ${align}/>` : ''}
+      ${borders  ? `<Borders>${borders}</Borders>` : '<Borders/>'}
+      ${font     ? `<Font ${font}/>` : ''}
+      ${interior ? `<Interior ${interior}/>` : '<Interior/>'}
+    </Style>`;
+  }
+  function bdr(color='#E2E8F0', positions=['Bottom','Right']) {
+    return positions.map(p =>
+      `<Border ss:Position="${p}" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="${color}"/>`
+    ).join('');
+  }
+
   const typeStyles = state.types.map(t => {
-    const s = sid(t.id);
+    const s  = sid(t.id);
     const l1 = hexLight(t.color, 55);
     const l2 = hexLight(t.color, 110);
-    return `
-    <Style ss:ID="t_${s}_full">
-      <Interior ss:Color="${t.color}" ss:Pattern="Solid"/>
-      <Font ss:Color="#FFFFFF" ss:Size="8" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-      <Borders><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="${t.color}"/></Borders>
-    </Style>
-    <Style ss:ID="t_${s}_part">
-      <Interior ss:Color="${l1}" ss:Pattern="Solid"/>
-      <Font ss:Color="#475569" ss:Size="8" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-      <Borders><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="${l1}"/></Borders>
-    </Style>
-    <Style ss:ID="t_${s}_low">
-      <Interior ss:Color="${l2}" ss:Pattern="Solid"/>
-      <Font ss:Color="#94A3B8" ss:Size="8" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-      <Borders><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="${l2}"/></Borders>
-    </Style>`;
+    return [
+      mkStyle(`t_${s}_full`, { align:'ss:Horizontal="Center" ss:Vertical="Center"', borders: bdr(t.color,['Right']), font:`ss:Color="#FFFFFF" ss:Size="8" ss:Name="Calibri"`, interior:`ss:Color="${t.color}" ss:Pattern="Solid"` }),
+      mkStyle(`t_${s}_part`, { align:'ss:Horizontal="Center" ss:Vertical="Center"', borders: bdr(l1,['Right']),    font:`ss:Color="#475569" ss:Size="8" ss:Name="Calibri"`, interior:`ss:Color="${l1}" ss:Pattern="Solid"` }),
+      mkStyle(`t_${s}_low`,  { align:'ss:Horizontal="Center" ss:Vertical="Center"', borders: bdr(l2,['Right']),    font:`ss:Color="#94A3B8" ss:Size="8" ss:Name="Calibri"`, interior:`ss:Color="${l2}" ss:Pattern="Solid"` }),
+    ].join('');
   }).join('');
 
-  const phaseStyles = state.phases.map((p,i) => `
-    <Style ss:ID="ph_${i}">
-      <Interior ss:Color="${p.color}" ss:Pattern="Solid"/>
-      <Font ss:Color="#FFFFFF" ss:Bold="1" ss:Size="9" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-    </Style>`).join('');
+  const phaseStyles = state.phases.map((p,i) =>
+    mkStyle(`ph_${i}`, { align:'ss:Horizontal="Center" ss:Vertical="Center"', font:`ss:Color="#FFFFFF" ss:Bold="1" ss:Size="9" ss:Name="Calibri"`, interior:`ss:Color="${p.color}" ss:Pattern="Solid"` })
+  ).join('');
 
-  const stylesXml = `
-    <Style ss:ID="Default"><Font ss:Name="Calibri" ss:Size="10"/><Alignment ss:Vertical="Center"/></Style>
-    <Style ss:ID="s_hdr">
-      <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
-      <Font ss:Color="#FFFFFF" ss:Bold="1" ss:Size="10" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-    </Style>
-    <Style ss:ID="s_hdr_l">
-      <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
-      <Font ss:Color="#FFFFFF" ss:Bold="1" ss:Size="10" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
-    </Style>
-    <Style ss:ID="s_sub">
-      <Interior ss:Color="#1E293B" ss:Pattern="Solid"/>
-      <Font ss:Color="#94A3B8" ss:Bold="1" ss:Size="8" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
-    </Style>
-    <Style ss:ID="s_e">
-      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
-      <Borders>
-        <Border ss:Position="Right"  ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
-      </Borders>
-    </Style>
-    <Style ss:ID="s_r0">
-      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
-      <Font ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
-      <Borders>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
-        <Border ss:Position="Right"  ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
-      </Borders>
-    </Style>
-    <Style ss:ID="s_r1">
-      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
-      <Font ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
-      <Borders>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
-        <Border ss:Position="Right"  ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
-      </Borders>
-    </Style>
-    <Style ss:ID="s_n0">
-      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
-      <Font ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
-      <Borders>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
-        <Border ss:Position="Right"  ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
-      </Borders>
-    </Style>
-    <Style ss:ID="s_n1">
-      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
-      <Font ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
-      <Borders>
-        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
-        <Border ss:Position="Right"  ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
-      </Borders>
-    </Style>
-    <Style ss:ID="s_wk">
-      <Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/>
-      <Font ss:Color="#64748B" ss:Size="8" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
-      <Borders><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders>
-    </Style>
-    <Style ss:ID="s_lbl">
-      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
-      <Font ss:Color="#64748B" ss:Bold="1" ss:Size="10" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
-    </Style>
-    <Style ss:ID="s_val">
-      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
-      <Font ss:Color="#0F172A" ss:Size="11" ss:Name="Calibri"/>
-      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
-    </Style>
-    ${typeStyles}
-    ${phaseStyles}`;
+  const stylesXml = [
+    mkStyle('Default',  { align:'ss:Vertical="Center"', font:'ss:Name="Calibri" ss:Size="10"' }),
+    mkStyle('s_hdr',    { align:'ss:Horizontal="Center" ss:Vertical="Center"', font:'ss:Color="#FFFFFF" ss:Bold="1" ss:Size="10" ss:Name="Calibri"', interior:'ss:Color="#0F172A" ss:Pattern="Solid"' }),
+    mkStyle('s_hdr_l',  { align:'ss:Horizontal="Left" ss:Vertical="Center"',   font:'ss:Color="#FFFFFF" ss:Bold="1" ss:Size="10" ss:Name="Calibri"', interior:'ss:Color="#0F172A" ss:Pattern="Solid"' }),
+    mkStyle('s_sub',    { align:'ss:Horizontal="Left" ss:Vertical="Center"',   font:'ss:Color="#94A3B8" ss:Bold="1" ss:Size="8" ss:Name="Calibri"',  interior:'ss:Color="#1E293B" ss:Pattern="Solid"' }),
+    mkStyle('s_e',      { borders: bdr('#E2E8F0'), interior:'ss:Color="#F8FAFC" ss:Pattern="Solid"' }),
+    mkStyle('s_r0',     { align:'ss:Horizontal="Left" ss:Vertical="Center"',   borders: bdr('#E9EEF4'), font:'ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"', interior:'ss:Color="#FFFFFF" ss:Pattern="Solid"' }),
+    mkStyle('s_r1',     { align:'ss:Horizontal="Left" ss:Vertical="Center"',   borders: bdr('#E9EEF4'), font:'ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"', interior:'ss:Color="#F8FAFC" ss:Pattern="Solid"' }),
+    mkStyle('s_n0',     { align:'ss:Horizontal="Right" ss:Vertical="Center"',  borders: bdr('#E9EEF4'), font:'ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"', interior:'ss:Color="#FFFFFF" ss:Pattern="Solid"' }),
+    mkStyle('s_n1',     { align:'ss:Horizontal="Right" ss:Vertical="Center"',  borders: bdr('#E9EEF4'), font:'ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"', interior:'ss:Color="#F8FAFC" ss:Pattern="Solid"' }),
+    mkStyle('s_wk',     { align:'ss:Horizontal="Center" ss:Vertical="Center"', borders: bdr('#E2E8F0',['Right']), font:'ss:Color="#64748B" ss:Size="8" ss:Name="Calibri"', interior:'ss:Color="#F1F5F9" ss:Pattern="Solid"' }),
+    mkStyle('s_lbl',    { align:'ss:Horizontal="Left" ss:Vertical="Center"',   font:'ss:Color="#64748B" ss:Bold="1" ss:Size="10" ss:Name="Calibri"', interior:'ss:Color="#F8FAFC" ss:Pattern="Solid"' }),
+    mkStyle('s_val',    { align:'ss:Horizontal="Left" ss:Vertical="Center"',   font:'ss:Color="#0F172A" ss:Size="11" ss:Name="Calibri"', interior:'ss:Color="#FFFFFF" ss:Pattern="Solid"' }),
+    typeStyles,
+    phaseStyles,
+  ].join('');
 
   // ── Sheet 1: Resources ──
   const resHdrs  = ['#','Role / Name','Type','Tag','Start Wk','End Wk','Hrs/Wk','FTE%','Rate $/hr','Total Cost','Note','Active'];
