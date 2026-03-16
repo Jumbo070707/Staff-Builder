@@ -363,11 +363,11 @@ input[type=checkbox] {
         <span class="brand-wordmark"><span>BAi</span>Ci · Staff Builder</span>
       </div>
       <input class="proj-title-input" id="proj-title"
-        value="EchoStar AJO Implementation — Resource Staffing View"
+        value="AJO Implementation — Resource Staffing View"
         oninput="state.title=this.value; scheduleChartRender(300)"
         placeholder="Project name…">
       <input class="proj-subtitle-input" id="proj-subtitle"
-        value="32-week engagement · Onshore &amp; offshore · Responsys → AJO migration"
+        value="32-week engagement · Onshore &amp; offshore · AEP migration"
         oninput="state.subtitle=this.value; scheduleChartRender(300)"
         placeholder="Project subtitle…">
     </div>
@@ -540,7 +540,16 @@ input[type=checkbox] {
         <div class="field">
           <label class="field-label">Total weeks</label>
           <input type="number" id="set-weeks" min="2" max="156" value="32"
-            oninput="state.totalWeeks=Math.max(2,+this.value||32); updateWeeksPill(); scheduleFullRender()">
+            oninput="
+              state.totalWeeks = Math.max(2, +this.value || 32);
+              const subIn = document.getElementById('proj-subtitle');
+              if (subIn && /\d+-week/.test(state.subtitle)) {
+                state.subtitle = state.subtitle.replace(/\d+-week/, state.totalWeeks + '-week');
+                subIn.value = state.subtitle;
+              }
+              updateWeeksPill();
+              scheduleFullRender();
+            ">
           <div class="field-hint">Sets the timeline length</div>
         </div>
         <div class="field">
@@ -657,8 +666,8 @@ const ROLE_ROSTER = [
 let uid = 1000;
 
 const state = {
-  title:    'EchoStar AJO Implementation — Resource Staffing View',
-  subtitle: '32-week engagement · Onshore & offshore · Responsys → AJO migration',
+  title:    'AJO Implementation — Resource Staffing View',
+  subtitle: '32-week engagement · Onshore & offshore · AEP migration',
   totalWeeks:        32,
   startDate:         null,
   weekLabelInterval: 4,
@@ -753,7 +762,9 @@ function updateWeeksPill() {
 function updateStats() {
   const active = state.resources.filter(r => r.active);
   document.getElementById('stat-resources').textContent = active.length;
-  document.getElementById('stat-weeks').textContent = state.totalWeeks;
+  document.getElementById('stat-weeks').textContent     = state.totalWeeks;
+  // Keep the weeks-pill in toolbar in sync too
+  updateWeeksPill();
 
   let peakFTE = 0;
   for (let w = 1; w <= state.totalWeeks; w++) {
