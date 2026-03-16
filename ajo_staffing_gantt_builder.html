@@ -413,10 +413,15 @@ input[type=checkbox] {
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M6 1v1M6 10v1M1 6h1M10 6h1M2.5 2.5l.7.7M8.8 8.8l.7.7M9.5 2.5l-.7.7M3.2 8.8l-.7.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
         Settings
       </button>
+      <button class="btn" onclick="openModal('templates-modal'); renderTemplateList()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M4 1h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M3 5.5h6M3 7.5h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/></svg>
+        Templates
+      </button>
     </div>
     <div class="toolbar-divider"></div>
     <div class="toolbar-group">
       <button class="btn btn-primary" onclick="addRow()">+ Add role</button>
+      <button class="btn btn-danger-ghost btn-sm" onclick="clearBoard()">Clear board</button>
     </div>
     <div class="toolbar-spacer"></div>
     <div class="toolbar-group">
@@ -558,6 +563,39 @@ input[type=checkbox] {
     </div>
     <div class="modal-footer">
       <button class="btn btn-primary" onclick="closeModal('milestones-modal');scheduleChartRender()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TEMPLATES MODAL ══════════ -->
+<div class="modal-backdrop" id="templates-modal" onclick="if(event.target===this)closeModal('templates-modal')">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span class="modal-title">Templates</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('templates-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text-2);margin-bottom:14px;line-height:1.6">
+        Save the current board as a reusable template. Load a template to restore its resources, phases, and settings as a new starting point.
+      </p>
+
+      <!-- Save current as template -->
+      <div style="display:flex;gap:8px;margin-bottom:18px">
+        <input type="text" id="tmpl-name-input" placeholder="Template name…"
+          style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:var(--r-md);font-size:12px;background:var(--surface);color:var(--text-1)"
+          onkeydown="if(event.key==='Enter')saveAsTemplate()">
+        <button class="btn btn-primary btn-sm" onclick="saveAsTemplate()">Save current</button>
+      </div>
+
+      <!-- Divider -->
+      <div style="height:1px;background:var(--border);margin-bottom:14px"></div>
+
+      <!-- Saved templates list -->
+      <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Saved templates</div>
+      <div id="template-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('templates-modal')">Close</button>
     </div>
   </div>
 </div>
@@ -885,6 +923,98 @@ function resetState() {
   if (!confirm('Reset all data to defaults? This cannot be undone.')) return;
   localStorage.removeItem(LS_KEY);
   location.reload();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Clear board
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function clearBoard() {
+  if (!confirm('Remove all resources from the board? This cannot be undone.')) return;
+  state.resources = [];
+  scheduleFullRender();
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Templates (localStorage)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const LS_TEMPLATES_KEY = 'bci-staff-builder-templates';
+
+function getTemplates() {
+  try {
+    const raw = localStorage.getItem(LS_TEMPLATES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveTemplates(templates) {
+  try { localStorage.setItem(LS_TEMPLATES_KEY, JSON.stringify(templates)); } catch(e) {}
+}
+
+function saveAsTemplate() {
+  const nameEl = document.getElementById('tmpl-name-input');
+  const name = (nameEl ? nameEl.value.trim() : '') || 'Untitled template';
+  const templates = getTemplates();
+  templates.unshift({
+    id: Date.now(),
+    name,
+    savedAt: new Date().toISOString(),
+    snapshot: JSON.parse(JSON.stringify(state))
+  });
+  saveTemplates(templates);
+  if (nameEl) nameEl.value = '';
+  renderTemplateList();
+}
+
+function loadTemplate(id) {
+  const templates = getTemplates();
+  const tmpl = templates.find(t => t.id === id);
+  if (!tmpl) return;
+  if (!confirm(`Load template "${tmpl.name}"? Current board will be replaced.`)) return;
+  Object.assign(state, JSON.parse(JSON.stringify(tmpl.snapshot)));
+  // Re-sync uids to avoid collisions
+  const resMax = state.resources.reduce((m,r) => Math.max(m,+r.id||0), 0);
+  const phMax  = state.phases.reduce((m,p) => Math.max(m,+(String(p.id).replace(/\D/g,''))||0), 0);
+  const tyMax  = state.types.reduce((m,t) => Math.max(m,+(String(t.id).replace(/\D/g,''))||0), 0);
+  const msMax  = (state.milestones||[]).reduce((m,ms) => Math.max(m,+ms.id||0), 0);
+  uid          = Math.max(uid, resMax, phMax, tyMax) + 1;
+  milestoneUid = Math.max(milestoneUid, msMax) + 1;
+  closeModal('templates-modal');
+  syncSettingsUI();
+  scheduleFullRender();
+}
+
+function deleteTemplate(id) {
+  const templates = getTemplates();
+  const tmpl = templates.find(t => t.id === id);
+  if (!tmpl) return;
+  if (!confirm(`Delete template "${tmpl.name}"?`)) return;
+  saveTemplates(templates.filter(t => t.id !== id));
+  renderTemplateList();
+}
+
+function renderTemplateList() {
+  const container = document.getElementById('template-list');
+  if (!container) return;
+  const templates = getTemplates();
+  if (templates.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-3);font-size:12px">No saved templates yet.</div>';
+    return;
+  }
+  container.innerHTML = templates.map(t => {
+    const date = new Date(t.savedAt);
+    const dateStr = date.toLocaleDateString(undefined, { month:'short', day:'numeric', year:'numeric' });
+    const resCount = (t.snapshot.resources||[]).length;
+    const phCount  = (t.snapshot.phases||[]).length;
+    return `
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-md)">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${t.name}</div>
+          <div style="font-size:11px;color:var(--text-3);margin-top:2px">${dateStr} · ${resCount} resource${resCount!==1?'s':''}, ${phCount} phase${phCount!==1?'s':''}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadTemplate(${t.id})">Load</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteTemplate(${t.id})">✕</button>
+      </div>`;
+  }).join('');
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
