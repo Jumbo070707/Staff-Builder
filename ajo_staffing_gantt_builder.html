@@ -425,6 +425,10 @@ input[type=checkbox] {
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3.5 6L6 8.5 8.5 6M2 10h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Export SVG
       </button>
+      <button class="btn btn-ghost" onclick="exportExcel()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M4 4l4 4M8 4L4 8" stroke="#22C55E" stroke-width="1.3" stroke-linecap="round"/></svg>
+        Export XLS
+      </button>
     </div>
   </div>
 
@@ -1620,6 +1624,334 @@ function exportSVG() {
   const a    = document.createElement('a');
   a.href     = URL.createObjectURL(blob);
   a.download = 'staffing-gantt.svg';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Export Excel (SpreadsheetML .xls)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function exportExcel() {
+  const TW     = state.totalWeeks;
+  const active = state.resources.filter(r => r.active);
+
+  // ── Helpers ──
+  function xesc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  // Lighten a hex color and return hex (SpreadsheetML needs #RRGGBB, not rgb())
+  function hexLight(hex, amt) {
+    const [r, g, b] = hexToRgb(hex);
+    const h = n => Math.min(255, n + amt).toString(16).padStart(2,'0');
+    return '#' + h(r) + h(g) + h(b);
+  }
+  // Sanitise a string for use as an XML ID
+  function sid(s) { return String(s).replace(/[^a-zA-Z0-9]/g,'_'); }
+  // Build a <Cell> element
+  function cell(styleID, type, value, mergeAcross = 0) {
+    const ma = mergeAcross > 0 ? ` ss:MergeAcross="${mergeAcross}"` : '';
+    if (value === null || value === undefined || value === '')
+      return `<Cell ss:StyleID="${styleID}"${ma}/>`;
+    return `<Cell ss:StyleID="${styleID}"${ma}><Data ss:Type="${type}">${xesc(String(value))}</Data></Cell>`;
+  }
+  function sc(styleID, v, ma=0) { return cell(styleID,'String',v,ma); }
+  function nc(styleID, v, ma=0) { return cell(styleID,'Number',v,ma); }
+  function ec(styleID, ma=0)    { return cell(styleID,'',null,ma); }
+
+  // ── Styles ──
+  const typeStyles = state.types.map(t => {
+    const s = sid(t.id);
+    const l1 = hexLight(t.color, 55);
+    const l2 = hexLight(t.color, 110);
+    return `
+    <Style ss:ID="t_${s}_full">
+      <Interior ss:Color="${t.color}" ss:Pattern="Solid"/>
+      <Font ss:Color="#FFFFFF" ss:Size="8" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Borders><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="${t.color}"/></Borders>
+    </Style>
+    <Style ss:ID="t_${s}_part">
+      <Interior ss:Color="${l1}" ss:Pattern="Solid"/>
+      <Font ss:Color="#475569" ss:Size="8" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Borders><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="${l1}"/></Borders>
+    </Style>
+    <Style ss:ID="t_${s}_low">
+      <Interior ss:Color="${l2}" ss:Pattern="Solid"/>
+      <Font ss:Color="#94A3B8" ss:Size="8" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Borders><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="${l2}"/></Borders>
+    </Style>`;
+  }).join('');
+
+  const phaseStyles = state.phases.map((p,i) => `
+    <Style ss:ID="ph_${i}">
+      <Interior ss:Color="${p.color}" ss:Pattern="Solid"/>
+      <Font ss:Color="#FFFFFF" ss:Bold="1" ss:Size="9" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+    </Style>`).join('');
+
+  const stylesXml = `
+    <Style ss:ID="Default"><Font ss:Name="Calibri" ss:Size="10"/><Alignment ss:Vertical="Center"/></Style>
+    <Style ss:ID="s_hdr">
+      <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
+      <Font ss:Color="#FFFFFF" ss:Bold="1" ss:Size="10" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="s_hdr_l">
+      <Interior ss:Color="#0F172A" ss:Pattern="Solid"/>
+      <Font ss:Color="#FFFFFF" ss:Bold="1" ss:Size="10" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="s_sub">
+      <Interior ss:Color="#1E293B" ss:Pattern="Solid"/>
+      <Font ss:Color="#94A3B8" ss:Bold="1" ss:Size="8" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="s_e">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <Borders>
+        <Border ss:Position="Right"  ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="s_r0">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <Font ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
+        <Border ss:Position="Right"  ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="s_r1">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <Font ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
+        <Border ss:Position="Right"  ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="s_n0">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <Font ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
+        <Border ss:Position="Right"  ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="s_n1">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <Font ss:Color="#1E293B" ss:Size="10" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Right" ss:Vertical="Center"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
+        <Border ss:Position="Right"  ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E9EEF4"/>
+      </Borders>
+    </Style>
+    <Style ss:ID="s_wk">
+      <Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/>
+      <Font ss:Color="#64748B" ss:Size="8" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Borders><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#E2E8F0"/></Borders>
+    </Style>
+    <Style ss:ID="s_lbl">
+      <Interior ss:Color="#F8FAFC" ss:Pattern="Solid"/>
+      <Font ss:Color="#64748B" ss:Bold="1" ss:Size="10" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+    </Style>
+    <Style ss:ID="s_val">
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+      <Font ss:Color="#0F172A" ss:Size="11" ss:Name="Calibri"/>
+      <Alignment ss:Horizontal="Left" ss:Vertical="Center"/>
+    </Style>
+    ${typeStyles}
+    ${phaseStyles}`;
+
+  // ── Sheet 1: Resources ──
+  const resHdrs  = ['#','Role / Name','Type','Tag','Start Wk','End Wk','Hrs/Wk','FTE%','Rate $/hr','Total Cost','Note','Active'];
+  const resWidths = [30,160,90,50,60,60,55,55,70,80,150,45];
+  let resTable = resWidths.map(w => `<Column ss:Width="${w}"/>`).join('') + '\n';
+  resTable += `<Row ss:Height="24">${resHdrs.map(h => sc('s_hdr',h)).join('')}</Row>\n`;
+  state.resources.forEach((r, i) => {
+    const t    = state.types.find(x => x.id === r.type) || { name: r.type };
+    const cost = resourceCost(r);
+    const rs   = i % 2 === 0 ? 's_r0' : 's_r1';
+    const ns   = i % 2 === 0 ? 's_n0' : 's_n1';
+    resTable += `<Row ss:Height="18">
+      ${nc(ns,i+1)}${sc(rs,r.role)}${sc(rs,t.name)}${sc(rs,r.tag||'')}
+      ${nc(ns,r.start)}${nc(ns,r.end)}${nc(ns,r.hrs)}${sc(ns,Math.round(r.hrs/40*100)+'%')}
+      ${nc(ns,r.rate||0)}${nc(ns,cost)}${sc(rs,r.note||'')}${sc(rs,r.active?'Yes':'No')}
+    </Row>\n`;
+  });
+
+  // ── Sheet 2: Gantt ──
+  // Map each week to a phase index
+  const wkPhase = new Array(TW + 2).fill(-1);
+  state.phases.forEach((p,pi) => {
+    for (let w = Math.max(1,p.start); w <= Math.min(TW,p.end); w++) wkPhase[w] = pi;
+  });
+  const wkInt = state.weekLabelInterval || 4;
+
+  let ganttTable = `<Column ss:Width="140"/><Column ss:Width="70"/><Column ss:Width="40"/>\n`;
+  for (let w = 1; w <= TW; w++) ganttTable += `<Column ss:Width="16"/>\n`;
+
+  // Phase header row
+  ganttTable += `<Row ss:Height="24">${sc('s_hdr_l', state.title, 2)}`;
+  let w = 1;
+  while (w <= TW) {
+    const pi = wkPhase[w];
+    if (pi >= 0) {
+      const end = Math.min(TW, state.phases[pi].end);
+      ganttTable += sc(`ph_${pi}`, state.phases[pi].name, end - w);
+      w = end + 1;
+    } else {
+      ganttTable += ec('s_hdr'); w++;
+    }
+  }
+  ganttTable += `</Row>\n`;
+
+  // Week label row
+  ganttTable += `<Row ss:Height="16">
+    ${sc('s_hdr_l','Role / Name')}${sc('s_hdr','Type')}${sc('s_hdr','FTE')}`;
+  for (let wk = 1; wk <= TW; wk++) {
+    const show = wk===1 || wk===TW || (wk-1) % wkInt === 0;
+    ganttTable += sc('s_wk', show ? (state.startDate ? wkLabel(wk) : `W${wk}`) : '');
+  }
+  ganttTable += `</Row>\n`;
+
+  // Build same row plan as SVG chart uses
+  const gPlan = [];
+  if (state.swimlanes) {
+    state.types.forEach(t => {
+      const rows = active.filter(r => r.type === t.id);
+      if (rows.length) { gPlan.push({kind:'section',typeObj:t,count:rows.length}); rows.forEach(r=>gPlan.push({kind:'row',r})); }
+    });
+    const knownIds = new Set(state.types.map(t=>t.id));
+    const orphans  = active.filter(r=>!knownIds.has(r.type));
+    if (orphans.length) { gPlan.push({kind:'section',typeObj:{name:'Other',id:'other',color:'#94A3B8'},count:orphans.length}); orphans.forEach(r=>gPlan.push({kind:'row',r})); }
+  } else {
+    active.forEach(r => gPlan.push({kind:'row',r}));
+  }
+
+  let rowI = 0;
+  gPlan.forEach(item => {
+    if (item.kind === 'section') {
+      ganttTable += `<Row ss:Height="16">${sc('s_sub',`${item.typeObj.name.toUpperCase()}  ·  ${item.count} ${item.count===1?'ROLE':'ROLES'}`, TW+2)}</Row>\n`;
+      return;
+    }
+    const r       = item.r;
+    const typeObj = state.types.find(t=>t.id===r.type) || {id:'unk',name:r.type,color:'#94A3B8'};
+    const isFull  = r.hrs >= 40;
+    const isPart  = r.hrs >= 20 && r.hrs < 40;
+    const lvl     = isFull ? 'full' : isPart ? 'part' : 'low';
+    const ts      = `t_${sid(typeObj.id)}_${lvl}`;
+    const rs      = rowI % 2 === 0 ? 's_r0' : 's_r1';
+    rowI++;
+    ganttTable += `<Row ss:Height="16">
+      ${sc(rs,r.role)}${sc(rs,typeObj.name)}${sc('s_wk',Math.round(r.hrs/40*100)+'%')}`;
+    for (let wk = 1; wk <= TW; wk++) {
+      if (r.start <= wk && r.end >= wk)
+        ganttTable += sc(ts, wk===r.start && r.tag ? r.tag.slice(0,4).toUpperCase() : '');
+      else
+        ganttTable += ec('s_e');
+    }
+    ganttTable += `</Row>\n`;
+  });
+
+  // ── Sheet 3: Summary ──
+  let peakFTE = 0;
+  for (let wk = 1; wk <= TW; wk++) {
+    const fte = active.filter(r=>r.start<=wk&&r.end>=wk).reduce((s,r)=>s+r.hrs/40,0);
+    if (fte > peakFTE) peakFTE = fte;
+  }
+  const totalCostVal = active.reduce((s,r)=>s+resourceCost(r),0);
+
+  let sumTable = `<Column ss:Width="180"/><Column ss:Width="220"/>\n`;
+  const srow = (lbl,val,ls='s_lbl',vs='s_val') =>
+    `<Row ss:Height="20">${sc(ls,lbl)}${sc(vs,String(val??''))}</Row>\n`;
+
+  sumTable += `<Row ss:Height="28">${sc('s_hdr_l','PROJECT SUMMARY',1)}</Row>\n`;
+  sumTable += srow('Project title', state.title);
+  if (state.subtitle) sumTable += srow('Subtitle', state.subtitle);
+  sumTable += srow('Total weeks', TW);
+  if (state.startDate) sumTable += srow('Start date', state.startDate);
+  sumTable += srow('Active resources', active.length);
+  sumTable += srow('Total resources (incl. inactive)', state.resources.length);
+  sumTable += srow('Peak FTE', peakFTE.toFixed(1));
+  if (state.showCost && totalCostVal > 0) sumTable += srow('Total est. cost', formatCost(totalCostVal, state.currency));
+
+  sumTable += `<Row ss:Height="8"/>\n`;
+  sumTable += `<Row ss:Height="22">${sc('s_hdr_l','PHASES',1)}</Row>\n`;
+  sumTable += `<Row ss:Height="16">${sc('s_hdr','Phase')}${sc('s_hdr','Timeline')}</Row>\n`;
+  state.phases.forEach((p,i) => {
+    const end = Math.min(p.end, TW);
+    const lbl = state.startDate ? `${wkLabel(p.start)} – ${wkLabel(end)}` : `W${p.start} – W${end}`;
+    sumTable += `<Row ss:Height="18">${sc(`ph_${i}`,p.name)}${sc('s_val',lbl)}</Row>\n`;
+  });
+
+  if (state.milestones.length > 0) {
+    sumTable += `<Row ss:Height="8"/>\n`;
+    sumTable += `<Row ss:Height="22">${sc('s_hdr_l','MILESTONES',1)}</Row>\n`;
+    sumTable += `<Row ss:Height="16">${sc('s_hdr','Milestone')}${sc('s_hdr','Week')}</Row>\n`;
+    state.milestones.forEach(m => {
+      const wlbl = state.startDate ? wkLabel(m.week) : `W${m.week}`;
+      sumTable += `<Row ss:Height="18">${sc('s_val',`◆ ${m.name}`)}${sc('s_val',wlbl)}</Row>\n`;
+    });
+  }
+
+  sumTable += `<Row ss:Height="8"/>\n`;
+  sumTable += `<Row ss:Height="22">${sc('s_hdr_l','RESOURCE BREAKDOWN BY TYPE',1)}</Row>\n`;
+  sumTable += `<Row ss:Height="16">${sc('s_hdr','Type')}${sc('s_hdr','Active Roles')}</Row>\n`;
+  state.types.forEach(t => {
+    const count = active.filter(r=>r.type===t.id).length;
+    if (count > 0) sumTable += `<Row ss:Height="18">${sc('s_lbl',t.name)}${nc('s_val',count)}</Row>\n`;
+  });
+
+  // ── Assemble workbook ──
+  const filename = (state.title||'staffing-plan').replace(/[^a-zA-Z0-9 \-_]/g,'').trim().slice(0,40) || 'staffing-plan';
+  const wb = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+<Styles>${stylesXml}</Styles>
+<Worksheet ss:Name="Resources">
+  <Table>${resTable}</Table>
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+    <FreezePanes/><FrozenNoSplit/>
+    <SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane>
+    <ActivePane>2</ActivePane><Panes><Pane><Number>2</Number></Pane></Panes>
+  </WorksheetOptions>
+</Worksheet>
+<Worksheet ss:Name="Gantt">
+  <Table>${ganttTable}</Table>
+  <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+    <FreezePanes/><FrozenNoSplit/>
+    <SplitHorizontal>2</SplitHorizontal><SplitVertical>3</SplitVertical>
+    <TopRowBottomPane>2</TopRowBottomPane><LeftColumnRightPane>3</LeftColumnRightPane>
+    <ActivePane>0</ActivePane>
+    <Panes>
+      <Pane><Number>3</Number></Pane>
+      <Pane><Number>2</Number><ActiveRow>2</ActiveRow></Pane>
+      <Pane><Number>1</Number><ActiveCol>3</ActiveCol></Pane>
+      <Pane><Number>0</Number></Pane>
+    </Panes>
+  </WorksheetOptions>
+</Worksheet>
+<Worksheet ss:Name="Summary">
+  <Table>${sumTable}</Table>
+</Worksheet>
+</Workbook>`;
+
+  const blob = new Blob([wb], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = `${filename}.xls`;
   a.click();
   URL.revokeObjectURL(a.href);
 }
