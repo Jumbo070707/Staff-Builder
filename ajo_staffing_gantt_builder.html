@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BAiCi Staff Builder</title>
+<style>
+/* ═══════════════════════════════════════════
+   BAiCi Design System — Staff Builder
+   ═══════════════════════════════════════════ */
+:root {
+  /* Brand palette */
+  --bci-950: #060D1A;
+  --bci-900: #0F172A;
+  --bci-800: #1E293B;
+  --bci-700: #334155;
+  --bci-600: #475569;
+  --bci-500: #64748B;
+  --bci-400: #94A3B8;
+  --bci-300: #CBD5E1;
+  --bci-200: #E2E8F0;
+  --bci-100: #F1F5F9;
+  --bci-50:  #F8FAFC;
+
+  --bci-blue-700: #1D4ED8;
+  --bci-blue-600: #2563EB;
+  --bci-blue-500: #3B82F6;
+  --bci-blue-400: #60A5FA;
+  --bci-blue-100: #DBEAFE;
+
+  --bci-teal-600: #0891B2;
+  --bci-teal-500: #06B6D4;
+  --bci-teal-100: #CFFAFE;
+
+  --bci-amber-700: #B45309;
+  --bci-amber-600: #D97706;
+  --bci-amber-500: #F59E0B;
+  --bci-amber-100: #FEF3C7;
+
+  --bci-emerald-600: #059669;
+  --bci-rose-500: #F43F5E;
+  --bci-violet-500: #8B5CF6;
+
+  --bci-red-500: #EF4444;
+  --bci-red-100: #FEE2E2;
+
+  /* Semantic tokens */
+  --bg: var(--bci-50);
+  --surface: #FFFFFF;
+  --surface-2: var(--bci-100);
+  --surface-3: var(--bci-200);
+  --border: var(--bci-200);
+  --border-focus: var(--bci-blue-500);
+  --text-1: var(--bci-900);
+  --text-2: var(--bci-600);
+  --text-3: var(--bci-400);
+  --accent: var(--bci-blue-600);
+  --accent-hover: var(--bci-blue-700);
+  --danger: var(--bci-red-500);
+
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
+  --r-xl: 14px;
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 13px; }
+body { font-family: var(--font); background: var(--bg); color: var(--text-1); line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+/* ── App shell ── */
+.app { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ── Header ── */
+.app-header {
+  background: linear-gradient(135deg, var(--bci-950) 0%, var(--bci-900) 60%, #0F1F3D 100%);
+  padding: 18px 24px 16px;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  position: relative; overflow: hidden;
+}
+.app-header::after {
+  content: '';
+  position: absolute; top: 0; right: 0; bottom: 0;
+  width: 40%; pointer-events: none;
+  background: radial-gradient(ellipse at 80% 50%, rgba(59,130,246,0.08) 0%, transparent 70%);
+}
+
+.header-left { flex: 1; min-width: 0; }
+.header-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+
+.brand-logo {
+  width: 30px; height: 30px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--bci-blue-500) 0%, var(--bci-teal-600) 100%);
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 8px rgba(59,130,246,0.4);
+}
+.brand-wordmark {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(255,255,255,0.55);
+}
+.brand-wordmark span { color: rgba(255,255,255,0.85); }
+
+.proj-title-input {
+  display: block; width: 100%;
+  font-size: 17px; font-weight: 600; color: #FFFFFF; font-family: var(--font);
+  background: transparent; border: none; outline: none;
+  border-bottom: 1.5px solid transparent; padding: 1px 0;
+  transition: border-color 0.15s;
+}
+.proj-title-input:focus { border-bottom-color: rgba(99,164,250,0.6); }
+.proj-title-input::placeholder { color: rgba(255,255,255,0.3); }
+
+.proj-subtitle-input {
+  display: block; width: 100%;
+  font-size: 12px; color: rgba(148,163,184,0.9); font-family: var(--font);
+  background: transparent; border: none; outline: none;
+  border-bottom: 1px solid transparent; padding: 1px 0; margin-top: 3px;
+  transition: border-color 0.15s;
+}
+.proj-subtitle-input:focus { border-bottom-color: rgba(148,163,184,0.35); }
+.proj-subtitle-input::placeholder { color: rgba(148,163,184,0.4); }
+
+.header-stats { display: flex; gap: 24px; align-items: flex-end; padding-bottom: 2px; flex-shrink: 0; }
+.stat { text-align: center; }
+.stat-value { font-size: 22px; font-weight: 700; color: #FFFFFF; line-height: 1; letter-spacing: -0.5px; }
+.stat-label { font-size: 9px; color: var(--bci-400); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 3px; }
+.stat-divider { width: 1px; height: 32px; background: rgba(255,255,255,0.1); align-self: center; }
+
+/* ── Toolbar ── */
+.toolbar {
+  display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+  padding: 8px 16px; background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+}
+.toolbar-group { display: flex; gap: 5px; align-items: center; }
+.toolbar-divider { width: 1px; height: 18px; background: var(--border); margin: 0 2px; }
+.toolbar-spacer { flex: 1; min-width: 8px; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 500; font-family: var(--font);
+  padding: 4px 11px; height: 28px;
+  border-radius: var(--r-md); border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-1);
+  cursor: pointer; white-space: nowrap; user-select: none;
+  transition: background 0.1s, border-color 0.1s, box-shadow 0.1s, color 0.1s;
+  text-decoration: none; line-height: 1;
+}
+.btn:hover { background: var(--surface-2); border-color: var(--bci-300); }
+.btn:active { background: var(--surface-3); }
+.btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+.btn-primary {
+  background: var(--accent); color: #fff; border-color: transparent;
+  box-shadow: 0 1px 4px rgba(37,99,235,0.35);
+}
+.btn-primary:hover { background: var(--accent-hover); box-shadow: 0 2px 8px rgba(37,99,235,0.45); border-color: transparent; }
+
+.btn-ghost { border-color: transparent; background: transparent; color: var(--text-2); }
+.btn-ghost:hover { background: var(--surface-2); color: var(--text-1); border-color: transparent; }
+
+.btn-danger-ghost { border-color: transparent; background: transparent; color: var(--bci-300); }
+.btn-danger-ghost:hover { color: var(--danger); background: var(--bci-red-100); }
+
+.btn-sm { font-size: 11px; height: 24px; padding: 2px 7px; }
+.btn-icon { width: 28px; padding: 0; justify-content: center; }
+.btn-icon.btn-sm { width: 24px; height: 24px; }
+
+/* ── Form controls ── */
+input[type=text], input[type=number], input[type=date], select {
+  font-size: 12px; font-family: var(--font);
+  padding: 3px 7px; height: 26px;
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--surface); color: var(--text-1);
+  outline: none; width: 100%;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+input[type=text]:focus, input[type=number]:focus, input[type=date]:focus, select:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2.5px rgba(59,130,246,0.14);
+}
+input[type=color] {
+  width: 28px; height: 26px; padding: 2px 3px;
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  cursor: pointer; background: var(--surface); outline: none;
+}
+input[type=checkbox] {
+  width: 14px; height: 14px; cursor: pointer; accent-color: var(--accent);
+}
+
+/* ── Main content area ── */
+.main { padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+.card-header {
+  padding: 9px 14px; background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+}
+.card-title { font-size: 12px; font-weight: 600; color: var(--text-1); letter-spacing: 0.01em; }
+
+/* ── Resource table ── */
+.resource-table-wrap { overflow-x: auto; }
+.resource-table {
+  width: 100%; border-collapse: collapse; min-width: 760px;
+}
+.resource-table th {
+  font-size: 10px; font-weight: 600; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.07em;
+  padding: 6px 7px; text-align: left;
+  background: var(--bci-50); border-bottom: 1px solid var(--border);
+  white-space: nowrap; position: sticky; top: 0; z-index: 1;
+}
+.resource-table td {
+  padding: 3px 5px; border-bottom: 1px solid var(--bci-100);
+  vertical-align: middle;
+}
+.resource-table tbody tr:last-child td { border-bottom: none; }
+.resource-table tbody tr:hover td { background: rgba(241,245,249,0.7); }
+.resource-table tbody tr.row-disabled { opacity: 0.4; }
+.resource-table tbody tr.row-disabled td:first-child { opacity: 1; }
+.resource-table tbody tr.row-disabled:hover td { background: transparent; }
+
+.col-toggle  { width: 34px; text-align: center; }
+.col-role    { min-width: 170px; max-width: 220px; }
+.col-type    { width: 120px; }
+.col-tag     { width: 58px; }
+.col-start   { width: 66px; }
+.col-end     { width: 66px; }
+.col-hrs     { width: 66px; }
+.col-fte     { width: 52px; text-align: center; }
+.col-note    { min-width: 110px; }
+.col-order   { width: 52px; white-space: nowrap; }
+.col-del     { width: 32px; text-align: center; }
+
+.fte-badge {
+  font-size: 10px; font-weight: 600; padding: 1px 5px;
+  border-radius: 3px; display: inline-block; line-height: 1.5;
+  color: var(--bci-blue-700); background: var(--bci-blue-100);
+}
+.fte-badge.fte-part { color: var(--bci-amber-700); background: var(--bci-amber-100); }
+.fte-badge.fte-low  { color: var(--bci-500); background: var(--bci-100); }
+
+/* ── Gantt chart area ── */
+.gantt-wrap svg { display: block; width: 100%; }
+
+.legend-strip {
+  display: flex; flex-wrap: wrap; gap: 12px;
+  padding: 9px 14px; border-top: 1px solid var(--border);
+  background: var(--bci-50);
+}
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-2); }
+.legend-swatch { width: 22px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+.legend-sep { width: 1px; height: 14px; background: var(--border); }
+
+/* ── Modals ── */
+.modal-backdrop {
+  display: none; position: fixed; inset: 0;
+  background: rgba(15,23,42,0.5); z-index: 500;
+  align-items: center; justify-content: center;
+  backdrop-filter: blur(3px);
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: var(--surface); border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg); width: 460px; max-width: 96vw;
+  max-height: 88vh; overflow-y: auto;
+  border: 1px solid var(--border);
+  animation: modal-in 0.18s ease;
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.modal-header {
+  padding: 15px 18px 13px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: var(--surface); z-index: 1;
+}
+.modal-title { font-size: 14px; font-weight: 600; color: var(--text-1); }
+.modal-body  { padding: 14px 18px; }
+.modal-footer {
+  padding: 11px 18px; border-top: 1px solid var(--border);
+  display: flex; justify-content: flex-end; gap: 8px;
+  position: sticky; bottom: 0; background: var(--surface);
+}
+
+/* ── Phase/type edit rows ── */
+.edit-list-header {
+  display: flex; gap: 8px; align-items: center;
+  padding: 0 0 6px; margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px; font-weight: 600; color: var(--text-3);
+  text-transform: uppercase; letter-spacing: 0.07em;
+}
+.edit-row {
+  display: flex; gap: 7px; align-items: center;
+  padding: 5px 0; border-bottom: 1px solid var(--bci-50);
+}
+.edit-row:last-child { border-bottom: none; }
+
+/* ── Settings grid ── */
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field-label { font-size: 11px; font-weight: 500; color: var(--text-2); }
+.field-hint { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+
+/* ── Misc util ── */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10px; font-weight: 500; padding: 1px 6px;
+  border-radius: 3px; border: 1px solid var(--border); background: var(--bci-50); color: var(--text-2);
+}
+.info-pill {
+  font-size: 10px; color: var(--text-3); background: var(--bci-100);
+  border-radius: 3px; padding: 1px 6px; border: 1px solid var(--border);
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══════════ HEADER ══════════ -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="header-brand">
+        <div class="brand-logo">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="1" y="1" width="6" height="6" rx="1.5" fill="white" opacity="0.95"/>
+            <rect x="9" y="1" width="6" height="6" rx="1.5" fill="white" opacity="0.55"/>
+            <rect x="1" y="9" width="6" height="6" rx="1.5" fill="white" opacity="0.55"/>
+            <rect x="9" y="9" width="6" height="6" rx="1.5" fill="white" opacity="0.25"/>
+          </svg>
+        </div>
+        <span class="brand-wordmark"><span>BAi</span>Ci · Staff Builder</span>
+      </div>
+      <input class="proj-title-input" id="proj-title"
+        value="EchoStar AJO Implementation — Resource Staffing View"
+        oninput="state.title=this.value; scheduleChartRender(300)"
+        placeholder="Project name…">
+      <input class="proj-subtitle-input" id="proj-subtitle"
+        value="32-week engagement · Onshore &amp; offshore · Responsys → AJO migration"
+        oninput="state.subtitle=this.value; scheduleChartRender(300)"
+        placeholder="Project subtitle…">
+    </div>
+    <div class="header-stats">
+      <div class="stat">
+        <div class="stat-value" id="stat-resources">15</div>
+        <div class="stat-label">Resources</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-value" id="stat-weeks">32</div>
+        <div class="stat-label">Weeks</div>
+      </div>
+      <div class="stat-divider"></div>
+      <div class="stat">
+        <div class="stat-value" id="stat-fte">12.0</div>
+        <div class="stat-label">Peak FTE</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════ TOOLBAR ══════════ -->
+  <div class="toolbar">
+    <div class="toolbar-group">
+      <button class="btn" onclick="openModal('phases-modal'); renderPhaseList()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/><line x1="4" y1="1" x2="4" y2="11" stroke="currentColor" stroke-width="1"/><line x1="8" y1="1" x2="8" y2="11" stroke="currentColor" stroke-width="1"/></svg>
+        Phases
+      </button>
+      <button class="btn" onclick="openModal('types-modal'); renderTypeList()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><circle cx="6" cy="6" r="2" fill="currentColor"/></svg>
+        Types
+      </button>
+      <button class="btn" onclick="openModal('settings-modal')">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M6 1v1M6 10v1M1 6h1M10 6h1M2.5 2.5l.7.7M8.8 8.8l.7.7M9.5 2.5l-.7.7M3.2 8.8l-.7.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
+        Settings
+      </button>
+    </div>
+    <div class="toolbar-divider"></div>
+    <div class="toolbar-group">
+      <button class="btn btn-primary" onclick="addRow()">+ Add role</button>
+    </div>
+    <div class="toolbar-spacer"></div>
+    <div class="toolbar-group">
+      <span class="info-pill" id="weeks-pill">32 wks</span>
+      <button class="btn btn-ghost" onclick="exportSVG()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1v7M3.5 6L6 8.5 8.5 6M2 10h8" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Export SVG
+      </button>
+    </div>
+  </div>
+
+  <!-- ══════════ MAIN ══════════ -->
+  <div class="main">
+
+    <!-- Resource Editor -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Resources</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <span class="info-pill" id="active-count-pill">15 active</span>
+          <button class="btn btn-sm btn-ghost" onclick="addRow()">+ Add role</button>
+        </div>
+      </div>
+      <div class="resource-table-wrap">
+        <table class="resource-table">
+          <thead>
+            <tr>
+              <th class="col-toggle" title="Active">✓</th>
+              <th class="col-role">Role / Name</th>
+              <th class="col-type">Type</th>
+              <th class="col-tag">Tag</th>
+              <th class="col-start">Start wk</th>
+              <th class="col-end">End wk</th>
+              <th class="col-hrs">Hrs/wk</th>
+              <th class="col-fte">FTE %</th>
+              <th class="col-note">Annotation</th>
+              <th class="col-order"></th>
+              <th class="col-del"></th>
+            </tr>
+          </thead>
+          <tbody id="resource-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Gantt Chart -->
+    <div class="card gantt-wrap">
+      <div class="card-header">
+        <div>
+          <div id="chart-title-el" style="font-size:13px;font-weight:600;color:var(--text-1)"></div>
+          <div id="chart-sub-el" style="font-size:11px;color:var(--text-2);margin-top:1px"></div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <span class="info-pill" id="chart-info-pill">32W · 15 roles</span>
+        </div>
+      </div>
+      <svg id="gantt-svg" xmlns="http://www.w3.org/2000/svg" style="display:block;width:100%"></svg>
+      <div class="legend-strip" id="legend-area"></div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- ══════════ PHASES MODAL ══════════ -->
+<div class="modal-backdrop" id="phases-modal" onclick="if(event.target===this){closeModal('phases-modal');scheduleFullRender()}">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Edit Phases</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('phases-modal');scheduleFullRender()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="edit-list-header">
+        <div style="flex:1">Phase name</div>
+        <div style="width:54px;text-align:center">Start wk</div>
+        <div style="width:54px;text-align:center">End wk</div>
+        <div style="width:28px;text-align:center">Color</div>
+        <div style="width:24px"></div>
+      </div>
+      <div id="phase-edit-list"></div>
+      <button class="btn btn-ghost" style="margin-top:10px;width:100%;border-style:dashed" onclick="addPhase()">+ Add phase</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('phases-modal');scheduleFullRender()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TYPES MODAL ══════════ -->
+<div class="modal-backdrop" id="types-modal" onclick="if(event.target===this){closeModal('types-modal');scheduleFullRender()}">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Resource Types</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('types-modal');scheduleFullRender()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text-2);margin-bottom:12px;line-height:1.6">
+        Define categories for your resources. Each type gets a color used in the Gantt chart.<br>
+        Types are reflected immediately in the resource editor dropdown.
+      </p>
+      <div class="edit-list-header">
+        <div style="flex:1">Type name</div>
+        <div style="width:28px;text-align:center">Color</div>
+        <div style="width:24px"></div>
+      </div>
+      <div id="type-edit-list"></div>
+      <button class="btn btn-ghost" style="margin-top:10px;width:100%;border-style:dashed" onclick="addType()">+ Add type</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('types-modal');scheduleFullRender()">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ SETTINGS MODAL ══════════ -->
+<div class="modal-backdrop" id="settings-modal" onclick="if(event.target===this)closeModal('settings-modal')">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Project Settings</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('settings-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-grid">
+        <div class="field">
+          <label class="field-label">Total weeks</label>
+          <input type="number" id="set-weeks" min="2" max="156" value="32"
+            oninput="state.totalWeeks=Math.max(2,+this.value||32); updateWeeksPill(); scheduleFullRender()">
+          <div class="field-hint">Sets the timeline length</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Start date (optional)</label>
+          <input type="date" id="set-startdate"
+            oninput="state.startDate=this.value||null; scheduleChartRender()">
+          <div class="field-hint">Labels weeks with calendar dates</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Week label interval</label>
+          <select id="set-wklabel" onchange="state.weekLabelInterval=+this.value; scheduleChartRender()">
+            <option value="1">Every week</option>
+            <option value="2">Every 2 weeks</option>
+            <option value="4" selected>Every 4 weeks</option>
+            <option value="5">Every 5 weeks</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Capacity chart</label>
+          <select id="set-capacity" onchange="state.showCapacity=this.value==='true'; scheduleChartRender()">
+            <option value="true" selected>Show capacity row</option>
+            <option value="false">Hide</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Row height</label>
+          <select id="set-rowh" onchange="state.rowH=+this.value; scheduleChartRender()">
+            <option value="30">Compact (30px)</option>
+            <option value="36" selected>Normal (36px)</option>
+            <option value="44">Comfortable (44px)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label">Bar labels</label>
+          <select id="set-barlabels" onchange="state.barLabels=this.value; scheduleChartRender()">
+            <option value="both" selected>Tag + annotation</option>
+            <option value="tag">Tag only</option>
+            <option value="note">Annotation only</option>
+            <option value="none">None</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('settings-modal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  State
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let uid = 1000;
+
+const state = {
+  title:    'EchoStar AJO Implementation — Resource Staffing View',
+  subtitle: '32-week engagement · Onshore & offshore · Responsys → AJO migration',
+  totalWeeks:        32,
+  startDate:         null,
+  weekLabelInterval: 4,
+  showCapacity:      true,
+  rowH:              36,
+  barLabels:         'both',
+
+  types: [
+    { id: 'onshore',  name: 'Onshore',  color: '#2563EB' },
+    { id: 'offshore', name: 'Offshore', color: '#0891B2' },
+  ],
+
+  phases: [
+    { id: 'p1', name: 'Discovery & Design',   start:  1, end:  6, color: '#6366F1' },
+    { id: 'p2', name: 'Data & Content',        start:  7, end: 12, color: '#0891B2' },
+    { id: 'p3', name: 'MVP Use Cases',          start: 13, end: 16, color: '#059669' },
+    { id: 'p4', name: 'Smart Scaling',          start: 17, end: 28, color: '#D97706' },
+    { id: 'p5', name: 'Tuning & Optimization',  start: 29, end: 32, color: '#DC2626' },
+  ],
+
+  resources: [
+    { id: uid++, role: 'PM (Onshore)',            type: 'onshore',  tag: 'PM',  start:  1, end: 32, hrs: 40, note: 'Full program lifecycle',  active: true },
+    { id: uid++, role: 'AEP Architect (Onshore)', type: 'onshore',  tag: 'AEP', start:  1, end: 32, hrs: 40, note: 'AEP/RTCDP strategy',       active: true },
+    { id: uid++, role: 'AJO SME Lead (Onshore)',  type: 'onshore',  tag: 'AJO', start:  1, end: 32, hrs: 40, note: 'Lead configuration',       active: true },
+    { id: uid++, role: 'QA Lead (Onshore)',        type: 'onshore',  tag: 'QA',  start:  7, end: 32, hrs: 40, note: 'Joins phase 2',            active: true },
+    { id: uid++, role: 'AEP Engineer (Onshore)',   type: 'onshore',  tag: 'ENG', start:  1, end: 32, hrs: 40, note: 'Ramps down phase 4',       active: true },
+    { id: uid++, role: 'BA #1 (Onshore)',          type: 'onshore',  tag: 'BA',  start:  1, end: 32, hrs: 40, note: 'Ramps down mid-prog',      active: true },
+    { id: uid++, role: 'BA #2 (Onshore)',          type: 'onshore',  tag: 'BA',  start:  1, end:  6, hrs: 40, note: 'Discovery only',           active: true },
+    { id: uid++, role: 'PM (Offshore)',             type: 'offshore', tag: 'PM',  start:  1, end: 32, hrs: 40, note: 'Offshore coordination',    active: true },
+    { id: uid++, role: 'QA #1 (Offshore)',          type: 'offshore', tag: 'QA',  start:  7, end: 32, hrs: 40, note: 'Joins phase 2',            active: true },
+    { id: uid++, role: 'QA #2 (Offshore)',          type: 'offshore', tag: 'QA',  start:  7, end: 28, hrs: 40, note: 'Through Smart Scale',      active: true },
+    { id: uid++, role: 'AJO Eng #1 (Offshore)',     type: 'offshore', tag: 'AJO', start:  1, end: 28, hrs: 40, note: 'FAC / transactional',      active: true },
+    { id: uid++, role: 'AJO Eng #2 (Offshore)',     type: 'offshore', tag: 'AJO', start:  1, end: 28, hrs: 40, note: 'FAC / transactional',      active: true },
+    { id: uid++, role: 'AJO Eng #3 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 28, hrs: 40, note: 'AEP/RTCDP support',        active: true },
+    { id: uid++, role: 'AJO SME #1 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 32, hrs: 40, note: 'Content templates',        active: true },
+    { id: uid++, role: 'AJO SME #2 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 28, hrs: 40, note: 'Journey config',           active: true },
+  ],
+};
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Utilities
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getType(id) {
+  return state.types.find(t => t.id === id) || { name: id, color: '#94A3B8' };
+}
+
+function fteStr(hrs) {
+  const pct = Math.round((hrs / 40) * 100);
+  return pct + '%';
+}
+
+function fteBadgeClass(hrs) {
+  if (hrs >= 40) return '';
+  if (hrs >= 20) return 'fte-part';
+  return 'fte-low';
+}
+
+function wkLabel(wk) {
+  if (!state.startDate) return `W${wk}`;
+  try {
+    const d = new Date(state.startDate + 'T00:00:00');
+    d.setDate(d.getDate() + (wk - 1) * 7);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch(e) { return `W${wk}`; }
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+}
+
+function updateWeeksPill() {
+  const el = document.getElementById('weeks-pill');
+  if (el) el.textContent = state.totalWeeks + ' wks';
+}
+
+function updateStats() {
+  const active = state.resources.filter(r => r.active);
+  document.getElementById('stat-resources').textContent = active.length;
+  document.getElementById('stat-weeks').textContent = state.totalWeeks;
+
+  let peakFTE = 0;
+  for (let w = 1; w <= state.totalWeeks; w++) {
+    const fte = active.filter(r => r.start <= w && r.end >= w)
+                      .reduce((s, r) => s + (r.hrs / 40), 0);
+    if (fte > peakFTE) peakFTE = fte;
+  }
+  document.getElementById('stat-fte').textContent = peakFTE.toFixed(1);
+
+  const titleEl = document.getElementById('chart-title-el');
+  const subEl   = document.getElementById('chart-sub-el');
+  if (titleEl) titleEl.textContent = state.title;
+  if (subEl)   subEl.textContent   = state.subtitle;
+
+  const infoEl = document.getElementById('chart-info-pill');
+  if (infoEl) infoEl.textContent = `${state.totalWeeks}W · ${active.length} roles`;
+
+  const countEl = document.getElementById('active-count-pill');
+  if (countEl) countEl.textContent = `${active.length} active`;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Render scheduling
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let _chartTimer = null;
+let _fullTimer  = null;
+
+function scheduleChartRender(delay = 0) {
+  clearTimeout(_chartTimer);
+  _chartTimer = setTimeout(() => {
+    renderChart();
+    updateStats();
+  }, delay);
+}
+
+function scheduleFullRender(delay = 0) {
+  clearTimeout(_fullTimer);
+  clearTimeout(_chartTimer);
+  _fullTimer = setTimeout(() => {
+    renderEditor();
+    renderChart();
+    updateStats();
+  }, delay);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Resource CRUD
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function addRow() {
+  const defType = state.types[0]?.id || 'onshore';
+  state.resources.push({
+    id: uid++, role: 'New role', type: defType, tag: '',
+    start: 1, end: state.totalWeeks, hrs: 40, note: '', active: true
+  });
+  scheduleFullRender();
+}
+
+function removeRow(id) {
+  state.resources = state.resources.filter(r => r.id !== id);
+  scheduleFullRender();
+}
+
+function toggleRow(id) {
+  const r = state.resources.find(r => r.id === id);
+  if (r) { r.active = !r.active; scheduleFullRender(); }
+}
+
+function moveRow(id, dir) {
+  const idx = state.resources.findIndex(r => r.id === id);
+  const newIdx = idx + dir;
+  if (newIdx < 0 || newIdx >= state.resources.length) return;
+  [state.resources[idx], state.resources[newIdx]] = [state.resources[newIdx], state.resources[idx]];
+  scheduleFullRender();
+}
+
+function updateResource(id, field, value) {
+  const r = state.resources.find(r => r.id === id);
+  if (!r) return;
+  r[field] = value;
+  // Update FTE badge inline without full re-render
+  if (field === 'hrs') {
+    const badge = document.getElementById('fte-' + id);
+    if (badge) {
+      badge.textContent = fteStr(value);
+      badge.className = 'fte-badge ' + fteBadgeClass(value);
+    }
+  }
+  scheduleChartRender(250);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Resource Editor
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderEditor() {
+  const tbody = document.getElementById('resource-tbody');
+  tbody.innerHTML = '';
+
+  const typeOpts = state.types
+    .map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`)
+    .join('');
+
+  state.resources.forEach((r, i) => {
+    const tr = document.createElement('tr');
+    if (!r.active) tr.classList.add('row-disabled');
+
+    const isFirst = i === 0;
+    const isLast  = i === state.resources.length - 1;
+
+    tr.innerHTML = `
+      <td class="col-toggle">
+        <input type="checkbox" ${r.active ? 'checked' : ''} title="${r.active ? 'Disable' : 'Enable'} role"
+          onchange="toggleRow(${r.id})">
+      </td>
+      <td class="col-role">
+        <input type="text" value="${esc(r.role)}"
+          oninput="updateResource(${r.id},'role',this.value)" placeholder="Role name">
+      </td>
+      <td class="col-type">
+        <select onchange="updateResource(${r.id},'type',this.value)">
+          ${state.types.map(t => `<option value="${esc(t.id)}"${r.type===t.id?' selected':''}>${esc(t.name)}</option>`).join('')}
+        </select>
+      </td>
+      <td class="col-tag">
+        <input type="text" value="${esc(r.tag)}" maxlength="5"
+          oninput="updateResource(${r.id},'tag',this.value)"
+          placeholder="Tag" style="text-align:center;font-weight:600">
+      </td>
+      <td class="col-start">
+        <input type="number" value="${r.start}" min="1" max="${state.totalWeeks}"
+          oninput="updateResource(${r.id},'start',Math.max(1,Math.min(+this.value||1,state.totalWeeks)))">
+      </td>
+      <td class="col-end">
+        <input type="number" value="${r.end}" min="1" max="${state.totalWeeks}"
+          oninput="updateResource(${r.id},'end',Math.max(1,Math.min(+this.value||state.totalWeeks,state.totalWeeks)))">
+      </td>
+      <td class="col-hrs">
+        <input type="number" value="${r.hrs}" min="1" max="80" step="1"
+          oninput="updateResource(${r.id},'hrs',Math.max(1,Math.min(+this.value||40,80)))"
+          title="Hours per week (1–80)">
+      </td>
+      <td class="col-fte" style="text-align:center">
+        <span class="fte-badge ${fteBadgeClass(r.hrs)}" id="fte-${r.id}">${fteStr(r.hrs)}</span>
+      </td>
+      <td class="col-note">
+        <input type="text" value="${esc(r.note)}"
+          oninput="updateResource(${r.id},'note',this.value)" placeholder="Annotation…">
+      </td>
+      <td class="col-order">
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="moveRow(${r.id},-1)" title="Move up"
+          ${isFirst ? 'disabled' : ''}>↑</button>
+        <button class="btn btn-ghost btn-icon btn-sm" onclick="moveRow(${r.id},1)" title="Move down"
+          ${isLast ? 'disabled' : ''}>↓</button>
+      </td>
+      <td class="col-del">
+        <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeRow(${r.id})" title="Remove role">✕</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  SVG helpers
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const NS = 'http://www.w3.org/2000/svg';
+
+function el(tag, attrs = {}, text = null) {
+  const e = document.createElementNS(NS, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
+  if (text !== null) e.textContent = text;
+  return e;
+}
+
+function hexToRgb(hex) {
+  const r = parseInt(hex.slice(1,3), 16);
+  const g = parseInt(hex.slice(3,5), 16);
+  const b = parseInt(hex.slice(5,7), 16);
+  return [r, g, b];
+}
+
+function lightenHex(hex, amt) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgb(${Math.min(255,r+amt)},${Math.min(255,g+amt)},${Math.min(255,b+amt)})`;
+}
+
+function lerpColor(c1, c2, t) {
+  const [r1,g1,b1] = hexToRgb(c1);
+  const [r2,g2,b2] = hexToRgb(c2);
+  return `rgb(${Math.round(r1+(r2-r1)*t)},${Math.round(g1+(g2-g1)*t)},${Math.round(b1+(b2-b1)*t)})`;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Gantt Chart
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function renderChart() {
+  const svg   = document.getElementById('gantt-svg');
+  const active = state.resources.filter(r => r.active);
+  const TW    = state.totalWeeks;
+
+  // Layout
+  const W       = 1040;
+  const LEFT    = 210;
+  const R_PAD   = 18;
+  const CHART_W = W - LEFT - R_PAD;
+  const ROW_H   = state.rowH || 36;
+  const BAR_H   = Math.round(ROW_H * 0.56);
+  const BAR_R   = Math.round(BAR_H / 2.2);
+  const BAR_OFF = Math.round((ROW_H - BAR_H) / 2);
+  const PH_H    = 38;      // phase header height
+  const WL_H    = 22;      // week labels height
+  const TOP_PAD = PH_H + WL_H + 2;
+  const CAP_H   = state.showCapacity ? 52 : 0;
+  const CAP_PAD = state.showCapacity && active.length > 0 ? 6 : 0;
+  const BOT_PAD = 14;
+  const TOTAL_H = TOP_PAD + active.length * ROW_H + CAP_PAD + CAP_H + BOT_PAD;
+
+  const wkW = CHART_W / TW;
+  function wkX(wk) { return LEFT + (wk - 1) * wkW; }
+
+  svg.setAttribute('viewBox', `0 0 ${W} ${TOTAL_H}`);
+  svg.innerHTML = '';
+
+  // ── Defs ──
+  const defs = el('defs');
+  svg.appendChild(defs);
+
+  // Bar gradients per type
+  state.types.forEach(t => {
+    const light = lightenHex(t.color, 35);
+    // Full opacity gradient
+    const gFull = el('linearGradient', { id: `g-${t.id}`, x1:'0%', y1:'0%', x2:'100%', y2:'0%' });
+    gFull.appendChild(el('stop', { offset:'0%',   'stop-color': t.color, 'stop-opacity':'1' }));
+    gFull.appendChild(el('stop', { offset:'100%', 'stop-color': light,   'stop-opacity':'1' }));
+    defs.appendChild(gFull);
+
+    // Part-time (half opacity)
+    const gPart = el('linearGradient', { id: `g-${t.id}-p`, x1:'0%', y1:'0%', x2:'100%', y2:'0%' });
+    gPart.appendChild(el('stop', { offset:'0%',   'stop-color': t.color, 'stop-opacity':'0.62' }));
+    gPart.appendChild(el('stop', { offset:'100%', 'stop-color': light,   'stop-opacity':'0.62' }));
+    defs.appendChild(gPart);
+
+    // Low (very light)
+    const gLow = el('linearGradient', { id: `g-${t.id}-l`, x1:'0%', y1:'0%', x2:'100%', y2:'0%' });
+    gLow.appendChild(el('stop', { offset:'0%',   'stop-color': t.color, 'stop-opacity':'0.32' }));
+    gLow.appendChild(el('stop', { offset:'100%', 'stop-color': light,   'stop-opacity':'0.32' }));
+    defs.appendChild(gLow);
+  });
+
+  // Phase band gradients (top-to-bottom fade)
+  state.phases.forEach((p, i) => {
+    const gbId = `gb-${i}`;
+    const gb = el('linearGradient', { id: gbId, x1:'0%', y1:'0%', x2:'0%', y2:'100%' });
+    gb.appendChild(el('stop', { offset:'0%',   'stop-color': p.color, 'stop-opacity':'0.09' }));
+    gb.appendChild(el('stop', { offset:'100%', 'stop-color': p.color, 'stop-opacity':'0.02' }));
+    defs.appendChild(gb);
+  });
+
+  // Bar drop shadow
+  const filt = el('filter', { id:'bar-shadow', x:'-4%', y:'-25%', width:'108%', height:'150%' });
+  const feDrop = el('feDropShadow', { dx:'0', dy:'1', stdDeviation:'1.5', 'flood-color':'rgba(0,0,0,0.20)' });
+  filt.appendChild(feDrop);
+  defs.appendChild(filt);
+
+  // Clip path for chart area only
+  const cp = el('clipPath', { id:'chart-clip' });
+  cp.appendChild(el('rect', { x: LEFT, y: 0, width: CHART_W + R_PAD, height: TOTAL_H }));
+  defs.appendChild(cp);
+
+  // ── Background ──
+  svg.appendChild(el('rect', { x:0, y:0, width:W, height:TOTAL_H, fill:'#F8FAFC' }));
+  // Left panel bg — pure white
+  svg.appendChild(el('rect', { x:0, y:0, width:LEFT, height:TOTAL_H, fill:'#FFFFFF' }));
+
+  // ── Phase bands ──
+  state.phases.forEach((p, pi) => {
+    const pStart = Math.max(1, p.start);
+    const pEnd   = Math.min(TW, p.end);
+    if (pStart > TW || pEnd < 1) return;
+    const x = wkX(pStart);
+    const w = wkX(pEnd + 1) - x;
+    if (w <= 0) return;
+
+    // Solid header bar
+    svg.appendChild(el('rect', {
+      x, y: 0, width: w, height: PH_H,
+      fill: p.color
+    }));
+
+    // Gradient body band (rows area)
+    svg.appendChild(el('rect', {
+      x, y: PH_H, width: w, height: TOTAL_H - PH_H,
+      fill: `url(#gb-${pi})`
+    }));
+
+    // Phase label (large)
+    const abbr = p.name.length > 22 ? p.name.slice(0, 20) + '…' : p.name;
+    svg.appendChild(el('text', {
+      x: x + w / 2, y: PH_H * 0.42,
+      'text-anchor': 'middle', 'dominant-baseline': 'central',
+      'font-size': '10.5', 'font-weight': '700', fill: 'rgba(255,255,255,0.97)',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.02em'
+    }, abbr));
+
+    // Duration sub-label
+    if (w > 55) {
+      const durLabel = state.startDate
+        ? `${wkLabel(pStart)} – ${wkLabel(pEnd)}`
+        : `W${pStart} – W${pEnd}`;
+      svg.appendChild(el('text', {
+        x: x + w / 2, y: PH_H * 0.78,
+        'text-anchor': 'middle', 'dominant-baseline': 'central',
+        'font-size': '8.5', 'font-weight': '500', fill: 'rgba(255,255,255,0.55)',
+        'font-family': 'var(--font-sans,system-ui,sans-serif)'
+      }, durLabel));
+    }
+
+    // Left edge line
+    svg.appendChild(el('line', {
+      x1: x, x2: x, y1: PH_H, y2: TOTAL_H - BOT_PAD,
+      stroke: p.color, 'stroke-width': '0.8', opacity: '0.35'
+    }));
+    // Right edge line
+    svg.appendChild(el('line', {
+      x1: x + w, x2: x + w, y1: PH_H, y2: TOTAL_H - BOT_PAD,
+      stroke: p.color, 'stroke-width': '0.8', opacity: '0.35'
+    }));
+  });
+
+  // ── Week label separator ──
+  svg.appendChild(el('rect', { x: 0, y: PH_H, width: W, height: WL_H, fill: 'rgba(248,250,252,0.92)' }));
+  svg.appendChild(el('line', { x1:0, x2:W, y1:PH_H, y2:PH_H, stroke:'rgba(226,232,240,0.7)', 'stroke-width':'1' }));
+  svg.appendChild(el('line', { x1:0, x2:W, y1:PH_H+WL_H, y2:PH_H+WL_H, stroke:'rgba(226,232,240,0.9)', 'stroke-width':'1' }));
+
+  // ── Week gridlines ──
+  const wkInterval = state.weekLabelInterval || 4;
+  for (let w = 1; w <= TW + 1; w++) {
+    const major = (w - 1) % wkInterval === 0;
+    if (!major) continue;
+    const x = wkX(w);
+    svg.appendChild(el('line', {
+      x1: x, x2: x, y1: PH_H + WL_H, y2: TOTAL_H - BOT_PAD,
+      stroke: '#E2E8F0', 'stroke-width': '0.7', opacity: '0.8'
+    }));
+  }
+  // Fine gridlines every week
+  for (let w = 1; w <= TW + 1; w++) {
+    const x = wkX(w);
+    svg.appendChild(el('line', {
+      x1: x, x2: x, y1: PH_H + WL_H, y2: TOTAL_H - BOT_PAD,
+      stroke: '#E2E8F0', 'stroke-width': '0.3', opacity: '0.5'
+    }));
+  }
+
+  // ── Week labels ──
+  const labeledWks = new Set();
+  for (let w = 1; w <= TW; w++) {
+    const sinceLast = (w - 1) % wkInterval === 0;
+    if (w === 1 || w === TW || sinceLast) labeledWks.add(w);
+  }
+  labeledWks.forEach(wk => {
+    const x = wkX(wk) + wkW / 2;
+    svg.appendChild(el('text', {
+      x, y: PH_H + WL_H / 2 + 1,
+      'text-anchor': 'middle', 'dominant-baseline': 'central',
+      'font-size': '8.5', fill: '#64748B',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)'
+    }, wkLabel(wk)));
+  });
+
+  // ── Left panel column headers ──
+  [['ROLE / NAME', 10], ['TYPE', LEFT - 82], ['HRS', LEFT - 16]].forEach(([lbl, x]) => {
+    svg.appendChild(el('text', {
+      x, y: PH_H + WL_H / 2 + 1,
+      'dominant-baseline': 'central',
+      'font-size': '8', 'font-weight': '700', fill: '#94A3B8',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.06em'
+    }, lbl));
+  });
+
+  // ── Left panel / chart separator ──
+  svg.appendChild(el('line', {
+    x1: LEFT - 1, x2: LEFT - 1, y1: 0, y2: TOTAL_H,
+    stroke: '#E2E8F0', 'stroke-width': '1'
+  }));
+
+  // ── Resource rows ──
+  active.forEach((r, i) => {
+    const y      = TOP_PAD + i * ROW_H;
+    const typeObj = getType(r.type);
+    const isFull = r.hrs >= 40;
+    const isPart = r.hrs >= 20 && r.hrs < 40;
+
+    // Alt row bg
+    if (i % 2 === 1) {
+      svg.appendChild(el('rect', { x:0, y, width:W, height:ROW_H, fill:'rgba(248,250,252,0.65)' }));
+    }
+
+    // Row bottom divider
+    svg.appendChild(el('line', {
+      x1:0, x2:W, y1:y+ROW_H, y2:y+ROW_H,
+      stroke:'#F1F5F9', 'stroke-width':'1'
+    }));
+
+    // ── Left panel content ──
+    const nameStr = r.role.length > 28 ? r.role.slice(0, 26) + '…' : r.role;
+    svg.appendChild(el('text', {
+      x: 10, y: y + ROW_H / 2,
+      'dominant-baseline': 'central',
+      'font-size': '11', 'font-weight': '500', fill: '#1E293B',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)'
+    }, nameStr));
+
+    // Type dot + abbrev
+    const dotX = LEFT - 88;
+    svg.appendChild(el('circle', {
+      cx: dotX + 5, cy: y + ROW_H / 2, r: '4.5',
+      fill: typeObj.color, opacity: '0.88'
+    }));
+    const typeAbbr = typeObj.name.slice(0, 4).toUpperCase();
+    svg.appendChild(el('text', {
+      x: dotX + 13, y: y + ROW_H / 2,
+      'dominant-baseline': 'central',
+      'font-size': '9', fill: '#64748B',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)'
+    }, typeAbbr));
+
+    // Hrs label (right-aligned before separator)
+    const hrsColor = isFull ? '#475569' : isPart ? '#D97706' : '#94A3B8';
+    const hrsFw    = isFull ? '400' : '600';
+    svg.appendChild(el('text', {
+      x: LEFT - 6, y: y + ROW_H / 2,
+      'text-anchor': 'end', 'dominant-baseline': 'central',
+      'font-size': '9.5', 'font-weight': hrsFw, fill: hrsColor,
+      'font-family': 'var(--font-sans,system-ui,sans-serif)'
+    }, r.hrs + 'h'));
+
+    // ── Chart area bar ──
+    const s  = Math.max(1, Math.min(r.start, TW));
+    const e  = Math.max(s, Math.min(r.end, TW));
+    const bx = wkX(s);
+    const bw = wkX(e + 1) - bx;
+
+    // Track guide (subtle pill bg)
+    svg.appendChild(el('rect', {
+      x: LEFT, y: y + BAR_OFF + 1, width: CHART_W, height: BAR_H - 2,
+      rx: BAR_R, fill: 'rgba(0,0,0,0.024)'
+    }));
+
+    // Main bar
+    const gradId = isFull ? `g-${r.type}` : isPart ? `g-${r.type}-p` : `g-${r.type}-l`;
+    const barEl  = el('rect', {
+      x: bx, y: y + BAR_OFF, width: bw, height: BAR_H,
+      rx: BAR_R, fill: `url(#${gradId})`,
+      filter: 'url(#bar-shadow)'
+    });
+    svg.appendChild(barEl);
+
+    // Top highlight shimmer
+    if (bw > 8) {
+      svg.appendChild(el('rect', {
+        x: bx + 2, y: y + BAR_OFF + 1.5,
+        width: Math.max(0, bw - 4), height: Math.floor(BAR_H * 0.45),
+        rx: BAR_R, fill: 'rgba(255,255,255,0.18)'
+      }));
+    }
+
+    // Tag pill
+    const showTag  = r.tag && bw > 26 && (state.barLabels === 'both' || state.barLabels === 'tag');
+    const showNote = r.note && bw > 55 && (state.barLabels === 'both' || state.barLabels === 'note');
+
+    let tagPillW = 0;
+    if (showTag) {
+      tagPillW = Math.min(38, bw - 8);
+      const pillX = bx + 5;
+      svg.appendChild(el('rect', {
+        x: pillX, y: y + BAR_OFF + 3.5, width: tagPillW, height: BAR_H - 7,
+        rx: '3', fill: 'rgba(0,0,0,0.22)'
+      }));
+      svg.appendChild(el('text', {
+        x: pillX + tagPillW / 2, y: y + BAR_OFF + BAR_H / 2 + 0.5,
+        'text-anchor': 'middle', 'dominant-baseline': 'central',
+        'font-size': '7.5', 'font-weight': '800', fill: 'rgba(255,255,255,0.96)',
+        'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.04em'
+      }, r.tag.slice(0, 5).toUpperCase()));
+    }
+
+    if (showNote) {
+      const noteX  = bx + (showTag ? tagPillW + 10 : 8);
+      const availW = bw - (showTag ? tagPillW + 16 : 14);
+      const maxCh  = Math.max(0, Math.floor(availW / 6.2));
+      const noteStr = r.note.length > maxCh ? r.note.slice(0, maxCh - 1) + '…' : r.note;
+      svg.appendChild(el('text', {
+        x: noteX, y: y + BAR_OFF + BAR_H / 2 + 0.5,
+        'dominant-baseline': 'central',
+        'font-size': '9', fill: 'rgba(255,255,255,0.90)',
+        'font-family': 'var(--font-sans,system-ui,sans-serif)'
+      }, noteStr));
+    }
+  });
+
+  // ── Row header divider (below week labels) ──
+  if (active.length === 0) {
+    svg.appendChild(el('text', {
+      x: LEFT + CHART_W / 2, y: TOP_PAD + 36,
+      'text-anchor': 'middle', 'dominant-baseline': 'central',
+      'font-size': '12', fill: '#94A3B8',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)'
+    }, 'No active resources — add roles or enable existing ones'));
+  }
+
+  // ── Capacity heatmap ──
+  if (state.showCapacity && active.length > 0) {
+    const capY    = TOP_PAD + active.length * ROW_H + CAP_PAD;
+    const barMaxH = CAP_H - 18;
+
+    // BG
+    svg.appendChild(el('rect', {
+      x: 0, y: capY, width: W, height: CAP_H,
+      fill: 'rgba(241,245,249,0.55)'
+    }));
+    svg.appendChild(el('line', {
+      x1: 0, x2: W, y1: capY, y2: capY,
+      stroke: '#E2E8F0', 'stroke-width': '1'
+    }));
+
+    // Label
+    svg.appendChild(el('text', {
+      x: 10, y: capY + CAP_H / 2,
+      'dominant-baseline': 'central',
+      'font-size': '8', 'font-weight': '700', fill: '#94A3B8',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.06em'
+    }, 'CAPACITY'));
+
+    // FTE per week
+    let maxFTE = 0;
+    const ftePW = [];
+    for (let w = 1; w <= TW; w++) {
+      const fte = active.filter(r => r.start <= w && r.end >= w)
+                        .reduce((s, r) => s + (r.hrs / 40), 0);
+      ftePW.push(fte);
+      if (fte > maxFTE) maxFTE = fte;
+    }
+
+    const barsGrp = el('g');
+    ftePW.forEach((fte, wi) => {
+      if (fte === 0) return;
+      const t   = maxFTE > 0 ? fte / maxFTE : 0;
+      const bh  = t * barMaxH;
+      const bx  = wkX(wi + 1);
+      const bw2 = Math.max(0.5, wkW - 0.8);
+      const by  = capY + CAP_H - bh - 4;
+      const fill = lerpColor('#93C5FD', '#1D4ED8', t);
+      barsGrp.appendChild(el('rect', {
+        x: bx, y: by, width: bw2, height: bh,
+        rx: '1.5', fill
+      }));
+    });
+    svg.appendChild(barsGrp);
+
+    // Max FTE label
+    if (maxFTE > 0) {
+      svg.appendChild(el('text', {
+        x: LEFT + 4, y: capY + 3,
+        'dominant-baseline': 'hanging',
+        'font-size': '7.5', fill: '#64748B',
+        'font-family': 'var(--font-sans,system-ui,sans-serif)'
+      }, `↑ ${maxFTE.toFixed(1)} FTE peak`));
+    }
+
+    // Baseline
+    svg.appendChild(el('line', {
+      x1: LEFT, x2: LEFT + CHART_W, y1: capY + CAP_H - 4, y2: capY + CAP_H - 4,
+      stroke: '#CBD5E1', 'stroke-width': '1'
+    }));
+  }
+
+  // ── Legend ──
+  const legend = document.getElementById('legend-area');
+  const typeItems = state.types.map(t => `
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:linear-gradient(90deg,${t.color},${lightenHex(t.color,35)})"></div>
+      ${esc(t.name)} (full)
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:${t.color};opacity:0.55"></div>
+      ${esc(t.name)} (part-time)
+    </div>
+  `).join('');
+
+  const phaseItems = state.phases.map(p => `
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:${p.color}"></div>
+      ${esc(p.name)}
+    </div>
+  `).join('');
+
+  legend.innerHTML = typeItems + '<div class="legend-sep"></div>' + phaseItems;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Export SVG
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function exportSVG() {
+  const svg  = document.getElementById('gantt-svg');
+  const blob = new Blob([svg.outerHTML], { type: 'image/svg+xml' });
+  const a    = document.createElement('a');
+  a.href     = URL.createObjectURL(blob);
+  a.download = 'staffing-gantt.svg';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Phase Editor
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function addPhase() {
+  state.phases.push({ id: 'p' + (uid++), name: 'New phase', start: 1, end: 4, color: '#6366F1' });
+  renderPhaseList();
+}
+
+function removePhase(id) {
+  state.phases = state.phases.filter(p => p.id !== id);
+  renderPhaseList();
+}
+
+function updatePhase(id, field, value) {
+  const p = state.phases.find(p => p.id === id);
+  if (p) p[field] = value;
+}
+
+function renderPhaseList() {
+  const list = document.getElementById('phase-edit-list');
+  list.innerHTML = '';
+  state.phases.forEach(p => {
+    const row = document.createElement('div');
+    row.className = 'edit-row';
+    row.innerHTML = `
+      <div style="flex:1">
+        <input type="text" value="${esc(p.name)}"
+          oninput="updatePhase('${p.id}','name',this.value)" placeholder="Phase name">
+      </div>
+      <div style="width:54px">
+        <input type="number" value="${p.start}" min="1" max="${state.totalWeeks}"
+          oninput="updatePhase('${p.id}','start',+this.value||1)"
+          style="text-align:center">
+      </div>
+      <div style="width:54px">
+        <input type="number" value="${p.end}" min="1" max="${state.totalWeeks}"
+          oninput="updatePhase('${p.id}','end',+this.value||state.totalWeeks)"
+          style="text-align:center">
+      </div>
+      <div style="width:28px">
+        <input type="color" value="${p.color}"
+          oninput="updatePhase('${p.id}','color',this.value)">
+      </div>
+      <div style="width:24px">
+        <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removePhase('${p.id}')">✕</button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Type Editor
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function addType() {
+  state.types.push({ id: 't' + (uid++), name: 'New type', color: '#6366F1' });
+  renderTypeList();
+}
+
+function removeType(id) {
+  if (state.types.length <= 1) { alert('You need at least one resource type.'); return; }
+  state.types = state.types.filter(t => t.id !== id);
+  renderTypeList();
+}
+
+function updateType(id, field, value) {
+  const t = state.types.find(t => t.id === id);
+  if (t) t[field] = value;
+}
+
+function renderTypeList() {
+  const list = document.getElementById('type-edit-list');
+  list.innerHTML = '';
+  state.types.forEach(t => {
+    const row = document.createElement('div');
+    row.className = 'edit-row';
+    row.innerHTML = `
+      <div style="flex:1">
+        <input type="text" value="${esc(t.name)}"
+          oninput="updateType('${t.id}','name',this.value)" placeholder="Type name">
+      </div>
+      <div style="width:28px">
+        <input type="color" value="${t.color}"
+          oninput="updateType('${t.id}','color',this.value)">
+      </div>
+      <div style="width:24px">
+        <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeType('${t.id}')">✕</button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Modal helpers
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// Keyboard: Escape closes any open modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-backdrop.open').forEach(m => {
+      m.classList.remove('open');
+      scheduleFullRender();
+    });
+  }
+});
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Init
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+scheduleFullRender();
+</script>
+</body>
+</html>
