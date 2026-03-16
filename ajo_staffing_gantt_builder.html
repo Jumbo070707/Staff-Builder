@@ -446,8 +446,8 @@ input[type=checkbox] {
               <th class="col-tag">Tag</th>
               <th class="col-start">Start wk</th>
               <th class="col-end">End wk</th>
-              <th class="col-hrs">Hrs/wk</th>
-              <th class="col-fte">FTE %</th>
+              <th class="col-hrs">FTE %</th>
+              <th class="col-fte"></th>
               <th class="col-rate" id="th-rate" style="display:none">Rate ($/h)</th>
               <th class="col-total" id="th-total" style="display:none">Total Cost</th>
               <th class="col-note">Annotation</th>
@@ -612,6 +612,48 @@ input[type=checkbox] {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 //  State
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Role Roster — AEP Full-Stack
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const ROLE_ROSTER = [
+  // Delivery & PMO
+  'Engagement Lead',
+  'Program Manager',
+  'PMO Analyst',
+  'Scrum Master',
+  // Architecture
+  'Solution Architect',
+  'AEP Architect',
+  'Integration Architect',
+  // AEP / RTCDP Platform
+  'AEP Engineer',
+  'RTCDP Specialist',
+  'Data Engineer',
+  'Data Modeler',
+  // AJO / Campaign
+  'AJO Lead',
+  'AJO SME',
+  'AJO Engineer',
+  'Campaign Manager',
+  'Content Strategist',
+  // Business & Analysis
+  'Business Analyst',
+  'Functional Consultant',
+  'Change Management Lead',
+  // QA / Testing
+  'QA Lead',
+  'QA Engineer',
+  'Performance Tester',
+  // Technical
+  'DevOps Engineer',
+  'Integration Engineer',
+  'Frontend Developer',
+  'Backend Developer',
+  // Training & Support
+  'Training Lead',
+  'Support Analyst',
+];
+
 let uid = 1000;
 
 const state = {
@@ -640,21 +682,21 @@ const state = {
   ],
 
   resources: [
-    { id: uid++, role: 'PM (Onshore)',            type: 'onshore',  tag: 'PM',  start:  1, end: 32, hrs: 40, rate: 0, note: 'Full program lifecycle',  active: true },
-    { id: uid++, role: 'AEP Architect (Onshore)', type: 'onshore',  tag: 'AEP', start:  1, end: 32, hrs: 40, rate: 0, note: 'AEP/RTCDP strategy',       active: true },
-    { id: uid++, role: 'AJO SME Lead (Onshore)',  type: 'onshore',  tag: 'AJO', start:  1, end: 32, hrs: 40, rate: 0, note: 'Lead configuration',       active: true },
-    { id: uid++, role: 'QA Lead (Onshore)',        type: 'onshore',  tag: 'QA',  start:  7, end: 32, hrs: 40, rate: 0, note: 'Joins phase 2',            active: true },
-    { id: uid++, role: 'AEP Engineer (Onshore)',   type: 'onshore',  tag: 'ENG', start:  1, end: 32, hrs: 40, rate: 0, note: 'Ramps down phase 4',       active: true },
-    { id: uid++, role: 'BA #1 (Onshore)',          type: 'onshore',  tag: 'BA',  start:  1, end: 32, hrs: 40, rate: 0, note: 'Ramps down mid-prog',      active: true },
-    { id: uid++, role: 'BA #2 (Onshore)',          type: 'onshore',  tag: 'BA',  start:  1, end:  6, hrs: 40, rate: 0, note: 'Discovery only',           active: true },
-    { id: uid++, role: 'PM (Offshore)',             type: 'offshore', tag: 'PM',  start:  1, end: 32, hrs: 40, rate: 0, note: 'Offshore coordination',    active: true },
-    { id: uid++, role: 'QA #1 (Offshore)',          type: 'offshore', tag: 'QA',  start:  7, end: 32, hrs: 40, rate: 0, note: 'Joins phase 2',            active: true },
-    { id: uid++, role: 'QA #2 (Offshore)',          type: 'offshore', tag: 'QA',  start:  7, end: 28, hrs: 40, rate: 0, note: 'Through Smart Scale',      active: true },
-    { id: uid++, role: 'AJO Eng #1 (Offshore)',     type: 'offshore', tag: 'AJO', start:  1, end: 28, hrs: 40, rate: 0, note: 'FAC / transactional',      active: true },
-    { id: uid++, role: 'AJO Eng #2 (Offshore)',     type: 'offshore', tag: 'AJO', start:  1, end: 28, hrs: 40, rate: 0, note: 'FAC / transactional',      active: true },
-    { id: uid++, role: 'AJO Eng #3 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 28, hrs: 40, rate: 0, note: 'AEP/RTCDP support',        active: true },
-    { id: uid++, role: 'AJO SME #1 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 32, hrs: 40, rate: 0, note: 'Content templates',        active: true },
-    { id: uid++, role: 'AJO SME #2 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 28, hrs: 40, rate: 0, note: 'Journey config',           active: true },
+    { id: uid++, role: 'Program Manager',    type: 'onshore',  tag: 'PM',  start:  1, end: 32, hrs: 40, rate: 0, note: 'Full program lifecycle',  active: true },
+    { id: uid++, role: 'AEP Architect',      type: 'onshore',  tag: 'AEP', start:  1, end: 32, hrs: 40, rate: 0, note: 'AEP/RTCDP strategy',       active: true },
+    { id: uid++, role: 'AJO Lead',           type: 'onshore',  tag: 'AJO', start:  1, end: 32, hrs: 40, rate: 0, note: 'Lead configuration',       active: true },
+    { id: uid++, role: 'QA Lead',            type: 'onshore',  tag: 'QA',  start:  7, end: 32, hrs: 40, rate: 0, note: 'Joins phase 2',            active: true },
+    { id: uid++, role: 'AEP Engineer',       type: 'onshore',  tag: 'ENG', start:  1, end: 32, hrs: 40, rate: 0, note: 'Ramps down phase 4',       active: true },
+    { id: uid++, role: 'Business Analyst',   type: 'onshore',  tag: 'BA',  start:  1, end: 32, hrs: 40, rate: 0, note: 'Ramps down mid-prog',      active: true },
+    { id: uid++, role: 'Business Analyst',   type: 'onshore',  tag: 'BA',  start:  1, end:  6, hrs: 40, rate: 0, note: 'Discovery only',           active: true },
+    { id: uid++, role: 'Program Manager',    type: 'offshore', tag: 'PM',  start:  1, end: 32, hrs: 40, rate: 0, note: 'Offshore coordination',    active: true },
+    { id: uid++, role: 'QA Engineer',        type: 'offshore', tag: 'QA',  start:  7, end: 32, hrs: 40, rate: 0, note: 'Joins phase 2',            active: true },
+    { id: uid++, role: 'QA Engineer',        type: 'offshore', tag: 'QA',  start:  7, end: 28, hrs: 40, rate: 0, note: 'Through Smart Scale',      active: true },
+    { id: uid++, role: 'AJO Engineer',       type: 'offshore', tag: 'AJO', start:  1, end: 28, hrs: 40, rate: 0, note: 'FAC / transactional',      active: true },
+    { id: uid++, role: 'AJO Engineer',       type: 'offshore', tag: 'AJO', start:  1, end: 28, hrs: 40, rate: 0, note: 'FAC / transactional',      active: true },
+    { id: uid++, role: 'AJO Engineer',       type: 'offshore', tag: 'AJO', start:  5, end: 28, hrs: 40, rate: 0, note: 'AEP/RTCDP support',        active: true },
+    { id: uid++, role: 'AJO SME',            type: 'offshore', tag: 'AJO', start:  5, end: 32, hrs: 40, rate: 0, note: 'Content templates',        active: true },
+    { id: uid++, role: 'AJO SME',            type: 'offshore', tag: 'AJO', start:  5, end: 28, hrs: 40, rate: 0, note: 'Journey config',           active: true },
   ],
 };
 
@@ -772,7 +814,7 @@ function scheduleFullRender(delay = 0) {
 function addRow() {
   const defType = state.types[0]?.id || 'onshore';
   state.resources.push({
-    id: uid++, role: 'New role', type: defType, tag: '',
+    id: uid++, role: ROLE_ROSTER[0], type: defType, tag: '',
     start: 1, end: state.totalWeeks, hrs: 40, rate: 0, note: '', active: true
   });
   scheduleFullRender();
@@ -865,8 +907,10 @@ function renderEditor() {
           onchange="toggleRow(${r.id})">
       </td>
       <td class="col-role">
-        <input type="text" value="${esc(r.role)}"
-          oninput="updateResource(${r.id},'role',this.value)" placeholder="Role name">
+        <select onchange="updateResource(${r.id},'role',this.value)">
+          ${ROLE_ROSTER.map(role => `<option value="${esc(role)}"${r.role===role?' selected':''}>${esc(role)}</option>`).join('')}
+          ${!ROLE_ROSTER.includes(r.role) ? `<option value="${esc(r.role)}" selected>${esc(r.role)}</option>` : ''}
+        </select>
       </td>
       <td class="col-type">
         <select onchange="updateResource(${r.id},'type',this.value)">
@@ -887,9 +931,11 @@ function renderEditor() {
           oninput="updateResource(${r.id},'end',Math.max(1,Math.min(+this.value||state.totalWeeks,state.totalWeeks)))">
       </td>
       <td class="col-hrs">
-        <input type="number" value="${r.hrs}" min="1" max="80" step="1"
-          oninput="updateResource(${r.id},'hrs',Math.max(1,Math.min(+this.value||40,80)))"
-          title="Hours per week (1–80)">
+        <select onchange="updateResource(${r.id},'hrs',+this.value)">
+          <option value="40"${r.hrs >= 40 ? ' selected' : ''}>100%</option>
+          <option value="20"${r.hrs >= 20 && r.hrs < 40 ? ' selected' : ''}>50%</option>
+          <option value="10"${r.hrs < 20 ? ' selected' : ''}>25%</option>
+        </select>
       </td>
       <td class="col-fte" style="text-align:center">
         <span class="fte-badge ${fteBadgeClass(r.hrs)}" id="fte-${r.id}">${fteStr(r.hrs)}</span>
@@ -958,7 +1004,7 @@ function renderChart() {
   const CHART_W = W - LEFT - R_PAD;
   const ROW_H   = state.rowH || 36;
   const BAR_H   = Math.round(ROW_H * 0.54);
-  const BAR_R   = Math.round(BAR_H / 2.2);
+  const BAR_R   = 3;
   const BAR_OFF = Math.round((ROW_H - BAR_H) / 2);
   const PH_H    = 40;      // phase header height
   const WL_H    = 22;      // week labels height
@@ -986,42 +1032,10 @@ function renderChart() {
   const defs = el('defs');
   svg.appendChild(defs);
 
-  // Bar gradients per type
-  state.types.forEach(t => {
-    const light = lightenHex(t.color, 35);
-    // Full opacity gradient
-    const gFull = el('linearGradient', { id: `g-${t.id}`, x1:'0%', y1:'0%', x2:'100%', y2:'0%' });
-    gFull.appendChild(el('stop', { offset:'0%',   'stop-color': t.color, 'stop-opacity':'1' }));
-    gFull.appendChild(el('stop', { offset:'100%', 'stop-color': light,   'stop-opacity':'1' }));
-    defs.appendChild(gFull);
+  // Flat bar fills use solid type colors with opacity — no gradients needed
 
-    // Part-time (half opacity)
-    const gPart = el('linearGradient', { id: `g-${t.id}-p`, x1:'0%', y1:'0%', x2:'100%', y2:'0%' });
-    gPart.appendChild(el('stop', { offset:'0%',   'stop-color': t.color, 'stop-opacity':'0.62' }));
-    gPart.appendChild(el('stop', { offset:'100%', 'stop-color': light,   'stop-opacity':'0.62' }));
-    defs.appendChild(gPart);
+  // Phase body bands use flat solid fills — no gradient defs needed
 
-    // Low (very light)
-    const gLow = el('linearGradient', { id: `g-${t.id}-l`, x1:'0%', y1:'0%', x2:'100%', y2:'0%' });
-    gLow.appendChild(el('stop', { offset:'0%',   'stop-color': t.color, 'stop-opacity':'0.32' }));
-    gLow.appendChild(el('stop', { offset:'100%', 'stop-color': light,   'stop-opacity':'0.32' }));
-    defs.appendChild(gLow);
-  });
-
-  // Phase band gradients (top-to-bottom fade)
-  state.phases.forEach((p, i) => {
-    const gbId = `gb-${i}`;
-    const gb = el('linearGradient', { id: gbId, x1:'0%', y1:'0%', x2:'0%', y2:'100%' });
-    gb.appendChild(el('stop', { offset:'0%',   'stop-color': p.color, 'stop-opacity':'0.09' }));
-    gb.appendChild(el('stop', { offset:'100%', 'stop-color': p.color, 'stop-opacity':'0.02' }));
-    defs.appendChild(gb);
-  });
-
-  // Bar drop shadow
-  const filt = el('filter', { id:'bar-shadow', x:'-4%', y:'-25%', width:'108%', height:'150%' });
-  const feDrop = el('feDropShadow', { dx:'0', dy:'1', stdDeviation:'1.5', 'flood-color':'rgba(0,0,0,0.20)' });
-  filt.appendChild(feDrop);
-  defs.appendChild(filt);
 
   // Clip path for chart area only
   const cp = el('clipPath', { id:'chart-clip' });
@@ -1031,12 +1045,8 @@ function renderChart() {
   // ── Background ──
   svg.appendChild(el('rect', { x:0, y:0, width:W, height:TOTAL_H, fill:'#F8FAFC' }));
 
-  // Left panel bg — pure white with a subtle right fade to give depth
-  const lpGrad = el('linearGradient', { id:'lp-grad', x1:'0%', y1:'0%', x2:'100%', y2:'0%' });
-  lpGrad.appendChild(el('stop', { offset:'85%', 'stop-color':'#FFFFFF', 'stop-opacity':'1' }));
-  lpGrad.appendChild(el('stop', { offset:'100%', 'stop-color':'#F1F5F9', 'stop-opacity':'1' }));
-  defs.appendChild(lpGrad);
-  svg.appendChild(el('rect', { x:0, y:0, width:LEFT, height:TOTAL_H, fill:'url(#lp-grad)' }));
+  // Left panel bg — flat white
+  svg.appendChild(el('rect', { x:0, y:0, width:LEFT, height:TOTAL_H, fill:'#FFFFFF' }));
 
   // ── Phase bands ──
   state.phases.forEach((p, pi) => {
@@ -1053,10 +1063,10 @@ function renderChart() {
       fill: p.color
     }));
 
-    // Gradient body band (rows area)
+    // Flat body band (rows area)
     svg.appendChild(el('rect', {
       x, y: PH_H, width: w, height: TOTAL_H - PH_H,
-      fill: `url(#gb-${pi})`
+      fill: p.color, opacity: '0.05'
     }));
 
     // Phase label — centered or with sub-label if space allows
@@ -1140,7 +1150,7 @@ function renderChart() {
   [
     ['ROLE / NAME', COL_ROLE_X],
     ['TYPE',        COL_TYPE_X - 2],
-    ['HRS',         COL_HRS_X - 2, 'end'],
+    ['FTE',         COL_HRS_X - 2, 'end'],
   ].forEach(([lbl, x, anchor = 'start']) => {
     svg.appendChild(el('text', {
       x, y: PH_H + WL_H / 2 + 1,
@@ -1214,7 +1224,7 @@ function renderChart() {
       'text-anchor': 'end', 'dominant-baseline': 'central',
       'font-size': '9.5', 'font-weight': hrsFw, fill: hrsColor,
       'font-family': 'var(--font-sans,system-ui,sans-serif)'
-    }, r.hrs + 'h'));
+    }, fteStr(r.hrs)));
 
     // ── Chart area bar ──
     const s  = Math.max(1, Math.min(r.start, TW));
@@ -1222,29 +1232,18 @@ function renderChart() {
     const bx = wkX(s);
     const bw = wkX(e + 1) - bx;
 
-    // Track guide (subtle pill bg)
+    // Track guide — flat row channel
     svg.appendChild(el('rect', {
-      x: LEFT, y: y + BAR_OFF + 1, width: CHART_W, height: BAR_H - 2,
-      rx: BAR_R, fill: 'rgba(0,0,0,0.024)'
+      x: LEFT, y: y + BAR_OFF, width: CHART_W, height: BAR_H,
+      rx: BAR_R, fill: 'rgba(0,0,0,0.05)'
     }));
 
-    // Main bar
-    const gradId = isFull ? `g-${r.type}` : isPart ? `g-${r.type}-p` : `g-${r.type}-l`;
-    const barEl  = el('rect', {
+    // Main bar — flat solid fill, opacity by FTE level
+    const barOpacity = isFull ? '0.85' : isPart ? '0.52' : '0.28';
+    svg.appendChild(el('rect', {
       x: bx, y: y + BAR_OFF, width: bw, height: BAR_H,
-      rx: BAR_R, fill: `url(#${gradId})`,
-      filter: 'url(#bar-shadow)'
-    });
-    svg.appendChild(barEl);
-
-    // Top highlight shimmer
-    if (bw > 8) {
-      svg.appendChild(el('rect', {
-        x: bx + 2, y: y + BAR_OFF + 1.5,
-        width: Math.max(0, bw - 4), height: Math.floor(BAR_H * 0.45),
-        rx: BAR_R, fill: 'rgba(255,255,255,0.18)'
-      }));
-    }
+      rx: BAR_R, fill: typeObj.color, opacity: barOpacity
+    }));
 
     // Tag pill
     const showTag  = r.tag && bw > 26 && (state.barLabels === 'both' || state.barLabels === 'tag');
@@ -1367,12 +1366,16 @@ function renderChart() {
   const legend = document.getElementById('legend-area');
   const typeItems = state.types.map(t => `
     <div class="legend-item">
-      <div class="legend-swatch" style="background:linear-gradient(90deg,${t.color},${lightenHex(t.color,35)})"></div>
-      ${esc(t.name)} (full)
+      <div class="legend-swatch" style="background:${t.color};opacity:0.85"></div>
+      ${esc(t.name)} (100%)
     </div>
     <div class="legend-item">
-      <div class="legend-swatch" style="background:${t.color};opacity:0.55"></div>
-      ${esc(t.name)} (part-time)
+      <div class="legend-swatch" style="background:${t.color};opacity:0.52"></div>
+      ${esc(t.name)} (50%)
+    </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:${t.color};opacity:0.28"></div>
+      ${esc(t.name)} (25%)
     </div>
   `).join('');
 
