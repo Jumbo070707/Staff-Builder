@@ -1446,29 +1446,49 @@ function renderChart() {
       'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.07em'
     }, 'CAPACITY'));
 
-    // FTE per week
+    // FTE per week — broken down by type for stacked blend
     let maxFTE = 0;
     const ftePW = [];
     for (let w = 1; w <= TW; w++) {
-      const fte = active.filter(r => r.start <= w && r.end >= w)
-                        .reduce((s, r) => s + (r.hrs / 40), 0);
-      ftePW.push(fte);
-      if (fte > maxFTE) maxFTE = fte;
+      const weekRes = active.filter(r => r.start <= w && r.end >= w);
+      const byType  = state.types
+        .map(t => ({ typeObj: t, fte: weekRes.filter(r => r.type === t.id).reduce((s, r) => s + r.hrs / 40, 0) }))
+        .filter(x => x.fte > 0);
+      const total = byType.reduce((s, x) => s + x.fte, 0);
+      ftePW.push({ total, byType });
+      if (total > maxFTE) maxFTE = total;
     }
 
     const barsGrp = el('g');
-    ftePW.forEach((fte, wi) => {
-      if (fte === 0) return;
-      const t   = maxFTE > 0 ? fte / maxFTE : 0;
-      const bh  = Math.max(2, t * barMaxH);
-      const bx  = wkX(wi + 1);
-      const bw2 = Math.max(0.5, wkW - 0.8);
-      const by  = capY + CAP_H - bh - 5;
-      const fill = lerpColor('#93C5FD', '#1D4ED8', t);
-      barsGrp.appendChild(el('rect', {
-        x: bx, y: by, width: bw2, height: bh,
-        rx: '1.5', fill
-      }));
+    ftePW.forEach(({ total, byType }, wi) => {
+      if (total === 0) return;
+      const bx   = wkX(wi + 1);
+      const bw2  = Math.max(0.5, wkW - 0.8);
+      const barH = Math.max(2, (total / maxFTE) * barMaxH);
+      const base = capY + CAP_H - 5;
+
+      // Stacked segments bottom-to-top, one per type
+      let segY = base;
+      byType.forEach(({ typeObj, fte }, si) => {
+        const segH = Math.max(0, (fte / total) * barH);
+        if (segH < 0.5) return;
+        segY -= segH;
+        const isTop = si === byType.length - 1;
+        // ClipPath per bar so top segment gets rounded corners
+        const cpId = `cp-cap-${wi}-${si}`;
+        const cp = el('clipPath', { id: cpId });
+        cp.appendChild(el('rect', {
+          x: bx, y: isTop ? segY : segY,
+          width: bw2, height: isTop ? segH + (base - segY - segH) : segH + 0.5
+        }));
+        defs.appendChild(cp);
+        barsGrp.appendChild(el('rect', {
+          x: bx, y: segY, width: bw2,
+          height: isTop ? segH : segH + 0.5,   // tiny overlap prevents hairline gaps
+          rx: isTop ? '1.5' : '0',
+          fill: typeObj.color, opacity: '0.72'
+        }));
+      });
     });
     svg.appendChild(barsGrp);
 
@@ -1610,16 +1630,18 @@ function exportSVG() {
 function addPhase() {
   state.phases.push({ id: 'p' + (uid++), name: 'New phase', start: 1, end: 4, color: '#6366F1' });
   renderPhaseList();
+  scheduleChartRender();
 }
 
 function removePhase(id) {
   state.phases = state.phases.filter(p => p.id !== id);
   renderPhaseList();
+  scheduleChartRender();
 }
 
 function updatePhase(id, field, value) {
   const p = state.phases.find(p => p.id === id);
-  if (p) p[field] = value;
+  if (p) { p[field] = value; scheduleChartRender(150); }
 }
 
 function renderPhaseList() {
