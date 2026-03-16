@@ -247,9 +247,18 @@ input[type=checkbox] {
 .col-end     { width: 66px; }
 .col-hrs     { width: 66px; }
 .col-fte     { width: 52px; text-align: center; }
+.col-rate    { width: 80px; }
+.col-total   { width: 90px; text-align: right; }
 .col-note    { min-width: 110px; }
 .col-order   { width: 52px; white-space: nowrap; }
 .col-del     { width: 32px; text-align: center; }
+
+.cost-badge {
+  font-size: 10px; font-weight: 600; padding: 1px 5px;
+  border-radius: 3px; display: inline-block; line-height: 1.5;
+  color: #059669; background: #D1FAE5;
+}
+.cost-badge.cost-zero { color: var(--bci-400); background: var(--bci-100); }
 
 .fte-badge {
   font-size: 10px; font-weight: 600; padding: 1px 5px;
@@ -377,6 +386,11 @@ input[type=checkbox] {
         <div class="stat-value" id="stat-fte">12.0</div>
         <div class="stat-label">Peak FTE</div>
       </div>
+      <div class="stat-divider" id="cost-stat-divider" style="display:none"></div>
+      <div class="stat" id="cost-stat" style="display:none">
+        <div class="stat-value" id="stat-cost" style="font-size:16px">—</div>
+        <div class="stat-label">Est. Cost</div>
+      </div>
     </div>
   </header>
 
@@ -434,6 +448,8 @@ input[type=checkbox] {
               <th class="col-end">End wk</th>
               <th class="col-hrs">Hrs/wk</th>
               <th class="col-fte">FTE %</th>
+              <th class="col-rate" id="th-rate" style="display:none">Rate ($/h)</th>
+              <th class="col-total" id="th-total" style="display:none">Total Cost</th>
               <th class="col-note">Annotation</th>
               <th class="col-order"></th>
               <th class="col-del"></th>
@@ -566,6 +582,24 @@ input[type=checkbox] {
             <option value="none">None</option>
           </select>
         </div>
+        <div class="field">
+          <label class="field-label">Show cost columns</label>
+          <select id="set-showcost" onchange="state.showCost=this.value==='true'; scheduleFullRender()">
+            <option value="false" selected>Hidden</option>
+            <option value="true">Show rate &amp; cost</option>
+          </select>
+          <div class="field-hint">Add hourly rate per role to calculate project cost</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Currency</label>
+          <select id="set-currency" onchange="state.currency=this.value; scheduleFullRender()">
+            <option value="USD" selected>USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="GBP">GBP (£)</option>
+            <option value="AUD">AUD (A$)</option>
+            <option value="CAD">CAD (C$)</option>
+          </select>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -589,6 +623,8 @@ const state = {
   showCapacity:      true,
   rowH:              36,
   barLabels:         'both',
+  showCost:          false,
+  currency:          'USD',
 
   types: [
     { id: 'onshore',  name: 'Onshore',  color: '#2563EB' },
@@ -604,21 +640,21 @@ const state = {
   ],
 
   resources: [
-    { id: uid++, role: 'PM (Onshore)',            type: 'onshore',  tag: 'PM',  start:  1, end: 32, hrs: 40, note: 'Full program lifecycle',  active: true },
-    { id: uid++, role: 'AEP Architect (Onshore)', type: 'onshore',  tag: 'AEP', start:  1, end: 32, hrs: 40, note: 'AEP/RTCDP strategy',       active: true },
-    { id: uid++, role: 'AJO SME Lead (Onshore)',  type: 'onshore',  tag: 'AJO', start:  1, end: 32, hrs: 40, note: 'Lead configuration',       active: true },
-    { id: uid++, role: 'QA Lead (Onshore)',        type: 'onshore',  tag: 'QA',  start:  7, end: 32, hrs: 40, note: 'Joins phase 2',            active: true },
-    { id: uid++, role: 'AEP Engineer (Onshore)',   type: 'onshore',  tag: 'ENG', start:  1, end: 32, hrs: 40, note: 'Ramps down phase 4',       active: true },
-    { id: uid++, role: 'BA #1 (Onshore)',          type: 'onshore',  tag: 'BA',  start:  1, end: 32, hrs: 40, note: 'Ramps down mid-prog',      active: true },
-    { id: uid++, role: 'BA #2 (Onshore)',          type: 'onshore',  tag: 'BA',  start:  1, end:  6, hrs: 40, note: 'Discovery only',           active: true },
-    { id: uid++, role: 'PM (Offshore)',             type: 'offshore', tag: 'PM',  start:  1, end: 32, hrs: 40, note: 'Offshore coordination',    active: true },
-    { id: uid++, role: 'QA #1 (Offshore)',          type: 'offshore', tag: 'QA',  start:  7, end: 32, hrs: 40, note: 'Joins phase 2',            active: true },
-    { id: uid++, role: 'QA #2 (Offshore)',          type: 'offshore', tag: 'QA',  start:  7, end: 28, hrs: 40, note: 'Through Smart Scale',      active: true },
-    { id: uid++, role: 'AJO Eng #1 (Offshore)',     type: 'offshore', tag: 'AJO', start:  1, end: 28, hrs: 40, note: 'FAC / transactional',      active: true },
-    { id: uid++, role: 'AJO Eng #2 (Offshore)',     type: 'offshore', tag: 'AJO', start:  1, end: 28, hrs: 40, note: 'FAC / transactional',      active: true },
-    { id: uid++, role: 'AJO Eng #3 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 28, hrs: 40, note: 'AEP/RTCDP support',        active: true },
-    { id: uid++, role: 'AJO SME #1 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 32, hrs: 40, note: 'Content templates',        active: true },
-    { id: uid++, role: 'AJO SME #2 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 28, hrs: 40, note: 'Journey config',           active: true },
+    { id: uid++, role: 'PM (Onshore)',            type: 'onshore',  tag: 'PM',  start:  1, end: 32, hrs: 40, rate: 0, note: 'Full program lifecycle',  active: true },
+    { id: uid++, role: 'AEP Architect (Onshore)', type: 'onshore',  tag: 'AEP', start:  1, end: 32, hrs: 40, rate: 0, note: 'AEP/RTCDP strategy',       active: true },
+    { id: uid++, role: 'AJO SME Lead (Onshore)',  type: 'onshore',  tag: 'AJO', start:  1, end: 32, hrs: 40, rate: 0, note: 'Lead configuration',       active: true },
+    { id: uid++, role: 'QA Lead (Onshore)',        type: 'onshore',  tag: 'QA',  start:  7, end: 32, hrs: 40, rate: 0, note: 'Joins phase 2',            active: true },
+    { id: uid++, role: 'AEP Engineer (Onshore)',   type: 'onshore',  tag: 'ENG', start:  1, end: 32, hrs: 40, rate: 0, note: 'Ramps down phase 4',       active: true },
+    { id: uid++, role: 'BA #1 (Onshore)',          type: 'onshore',  tag: 'BA',  start:  1, end: 32, hrs: 40, rate: 0, note: 'Ramps down mid-prog',      active: true },
+    { id: uid++, role: 'BA #2 (Onshore)',          type: 'onshore',  tag: 'BA',  start:  1, end:  6, hrs: 40, rate: 0, note: 'Discovery only',           active: true },
+    { id: uid++, role: 'PM (Offshore)',             type: 'offshore', tag: 'PM',  start:  1, end: 32, hrs: 40, rate: 0, note: 'Offshore coordination',    active: true },
+    { id: uid++, role: 'QA #1 (Offshore)',          type: 'offshore', tag: 'QA',  start:  7, end: 32, hrs: 40, rate: 0, note: 'Joins phase 2',            active: true },
+    { id: uid++, role: 'QA #2 (Offshore)',          type: 'offshore', tag: 'QA',  start:  7, end: 28, hrs: 40, rate: 0, note: 'Through Smart Scale',      active: true },
+    { id: uid++, role: 'AJO Eng #1 (Offshore)',     type: 'offshore', tag: 'AJO', start:  1, end: 28, hrs: 40, rate: 0, note: 'FAC / transactional',      active: true },
+    { id: uid++, role: 'AJO Eng #2 (Offshore)',     type: 'offshore', tag: 'AJO', start:  1, end: 28, hrs: 40, rate: 0, note: 'FAC / transactional',      active: true },
+    { id: uid++, role: 'AJO Eng #3 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 28, hrs: 40, rate: 0, note: 'AEP/RTCDP support',        active: true },
+    { id: uid++, role: 'AJO SME #1 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 32, hrs: 40, rate: 0, note: 'Content templates',        active: true },
+    { id: uid++, role: 'AJO SME #2 (Offshore)',     type: 'offshore', tag: 'AJO', start:  5, end: 28, hrs: 40, rate: 0, note: 'Journey config',           active: true },
   ],
 };
 
@@ -632,6 +668,20 @@ function getType(id) {
 function fteStr(hrs) {
   const pct = Math.round((hrs / 40) * 100);
   return pct + '%';
+}
+
+function resourceCost(r) {
+  // Total cost = hourly rate × hours/wk × weeks engaged
+  if (!r.rate || r.rate <= 0) return 0;
+  const weeks = Math.max(0, r.end - r.start + 1);
+  return r.rate * r.hrs * weeks;
+}
+
+function formatCost(val, currency) {
+  const sym = { USD: '$', EUR: '€', GBP: '£', AUD: 'A$', CAD: 'C$' }[currency] || '$';
+  if (val >= 1_000_000) return sym + (val / 1_000_000).toFixed(1) + 'M';
+  if (val >= 1_000)     return sym + (val / 1_000).toFixed(0) + 'K';
+  return sym + val.toFixed(0);
 }
 
 function fteBadgeClass(hrs) {
@@ -670,6 +720,15 @@ function updateStats() {
     if (fte > peakFTE) peakFTE = fte;
   }
   document.getElementById('stat-fte').textContent = peakFTE.toFixed(1);
+
+  // Cost stat
+  const totalCost = active.reduce((sum, r) => sum + resourceCost(r), 0);
+  const costDivider = document.getElementById('cost-stat-divider');
+  const costStat    = document.getElementById('cost-stat');
+  const costVal     = document.getElementById('stat-cost');
+  if (costDivider) costDivider.style.display = state.showCost ? '' : 'none';
+  if (costStat)    costStat.style.display    = state.showCost ? '' : 'none';
+  if (costVal)     costVal.textContent       = state.showCost ? formatCost(totalCost, state.currency) : '—';
 
   const titleEl = document.getElementById('chart-title-el');
   const subEl   = document.getElementById('chart-sub-el');
@@ -714,7 +773,7 @@ function addRow() {
   const defType = state.types[0]?.id || 'onshore';
   state.resources.push({
     id: uid++, role: 'New role', type: defType, tag: '',
-    start: 1, end: state.totalWeeks, hrs: 40, note: '', active: true
+    start: 1, end: state.totalWeeks, hrs: 40, rate: 0, note: '', active: true
   });
   scheduleFullRender();
 }
@@ -741,15 +800,32 @@ function updateResource(id, field, value) {
   const r = state.resources.find(r => r.id === id);
   if (!r) return;
   r[field] = value;
-  // Update FTE badge inline without full re-render
+  // Update badges inline without full re-render
   if (field === 'hrs') {
     const badge = document.getElementById('fte-' + id);
     if (badge) {
       badge.textContent = fteStr(value);
       badge.className = 'fte-badge ' + fteBadgeClass(value);
     }
+    refreshCostCell(id);
   }
+  if (field === 'start' || field === 'end') refreshCostCell(id);
   scheduleChartRender(250);
+}
+
+function refreshCostCell(id) {
+  const r = state.resources.find(r => r.id === id);
+  if (!r || !state.showCost) return;
+  const badge = document.getElementById('cost-' + id);
+  if (!badge) return;
+  const cost = resourceCost(r);
+  badge.textContent = cost === 0 ? '—' : formatCost(cost, state.currency);
+  badge.className   = 'cost-badge' + (cost === 0 ? ' cost-zero' : '');
+  // Also refresh the header cost stat
+  const active = state.resources.filter(r => r.active);
+  const total  = active.reduce((sum, r) => sum + resourceCost(r), 0);
+  const costVal = document.getElementById('stat-cost');
+  if (costVal) costVal.textContent = formatCost(total, state.currency);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -759,9 +835,11 @@ function renderEditor() {
   const tbody = document.getElementById('resource-tbody');
   tbody.innerHTML = '';
 
-  const typeOpts = state.types
-    .map(t => `<option value="${esc(t.id)}">${esc(t.name)}</option>`)
-    .join('');
+  // Show/hide cost columns in header
+  const thRate  = document.getElementById('th-rate');
+  const thTotal = document.getElementById('th-total');
+  if (thRate)  thRate.style.display  = state.showCost ? '' : 'none';
+  if (thTotal) thTotal.style.display = state.showCost ? '' : 'none';
 
   state.resources.forEach((r, i) => {
     const tr = document.createElement('tr');
@@ -769,6 +847,17 @@ function renderEditor() {
 
     const isFirst = i === 0;
     const isLast  = i === state.resources.length - 1;
+
+    const cost = resourceCost(r);
+    const costCells = state.showCost ? `
+      <td class="col-rate">
+        <input type="number" value="${r.rate || 0}" min="0" step="1"
+          oninput="updateResource(${r.id},'rate',Math.max(0,+this.value||0)); refreshCostCell(${r.id})"
+          title="Hourly rate">
+      </td>
+      <td class="col-total" style="text-align:right">
+        <span class="cost-badge${cost === 0 ? ' cost-zero' : ''}" id="cost-${r.id}">${cost === 0 ? '—' : formatCost(cost, state.currency)}</span>
+      </td>` : '';
 
     tr.innerHTML = `
       <td class="col-toggle">
@@ -805,6 +894,7 @@ function renderEditor() {
       <td class="col-fte" style="text-align:center">
         <span class="fte-badge ${fteBadgeClass(r.hrs)}" id="fte-${r.id}">${fteStr(r.hrs)}</span>
       </td>
+      ${costCells}
       <td class="col-note">
         <input type="text" value="${esc(r.note)}"
           oninput="updateResource(${r.id},'note',this.value)" placeholder="Annotation…">
