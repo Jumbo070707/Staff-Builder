@@ -283,6 +283,15 @@ input[type=checkbox] {
 .resource-table tbody tr.row-disabled td:first-child { opacity: 1; }
 .resource-table tbody tr.row-disabled:hover td { background: transparent; }
 
+/* ── Allocation splits ── */
+.split-sub-row td { background: var(--surface-2); padding: 4px 5px 6px 38px; border-bottom: 1px solid var(--bci-100); }
+.split-entry { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; font-size: 11px; color: var(--text-2); }
+.split-entry:last-child { margin-bottom: 0; }
+.split-entry input[type=number] { width: 52px; }
+.split-entry select { width: 68px; }
+.split-add-btn { margin-top: 4px; }
+[data-theme="dark"] .split-sub-row td { background: var(--surface-2); border-color: var(--border); }
+
 .col-toggle  { width: 34px; text-align: center; }
 .col-role    { min-width: 170px; max-width: 220px; }
 .col-type    { width: 120px; }
@@ -935,8 +944,12 @@ function updateStats() {
 
   let peakFTE = 0;
   for (let w = 1; w <= state.totalWeeks; w++) {
-    const fte = active.filter(r => r.start <= w && r.end >= w)
-                      .reduce((s, r) => s + (r.hrs / 40), 0);
+    let fte = 0;
+    active.forEach(r => {
+      const segs = buildSegments(r);
+      const activeSeg = segs.find(seg => seg.start <= w && seg.end >= w);
+      if (activeSeg) fte += activeSeg.hrs / 40;
+    });
     if (fte > peakFTE) peakFTE = fte;
   }
   document.getElementById('stat-fte').textContent = peakFTE.toFixed(1);
@@ -978,6 +991,7 @@ function loadState() {
     const saved = JSON.parse(raw);
     // Merge saved values into state (preserves any new default keys)
     Object.assign(state, saved);
+    state.resources.forEach(r => { if (!r.splits) r.splits = []; });
     // Re-sync uid counters above the highest ID in the restored data
     const resMax = state.resources.reduce((m, r) => Math.max(m, +r.id || 0), 0);
     const phMax  = state.phases.reduce((m, p) => Math.max(m, +(String(p.id).replace(/\D/g,'')) || 0), 0);
@@ -1134,7 +1148,7 @@ function addRow() {
   const defType = state.types[0]?.id || 'onshore';
   state.resources.push({
     id: uid++, role: ROLE_ROSTER[0], type: defType, tag: '',
-    start: 1, end: state.totalWeeks, hrs: 40, rate: 0, note: '', active: true
+    start: 1, end: state.totalWeeks, hrs: 40, rate: 0, note: '', active: true, splits: []
   });
   scheduleFullRender();
 }
@@ -1187,6 +1201,60 @@ function refreshCostCell(id) {
   const total  = active.reduce((sum, r) => sum + resourceCost(r), 0);
   const costVal = document.getElementById('stat-cost');
   if (costVal) costVal.textContent = formatCost(total, state.currency);
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Allocation segments helper
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function buildSegments(r) {
+  const splits = (r.splits || []).filter(s => s.week > r.start && s.week <= r.end);
+  splits.sort((a, b) => a.week - b.week);
+  const pts = [{ week: r.start, hrs: r.hrs }, ...splits];
+  return pts.map((pt, i) => ({
+    start: pt.week,
+    end:   i < pts.length - 1 ? pts[i + 1].week - 1 : r.end,
+    hrs:   pt.hrs
+  }));
+}
+
+// Split CRUD
+const _expandedSplits = new Set();
+
+function toggleSplits(rid) {
+  if (_expandedSplits.has(rid)) _expandedSplits.delete(rid);
+  else _expandedSplits.add(rid);
+  renderEditor();
+}
+
+function addSplit(rid) {
+  const r = state.resources.find(x => x.id === rid);
+  if (!r) return;
+  const segs = buildSegments(r);
+  const lastSeg = segs[segs.length - 1];
+  const defaultWeek = Math.min(r.end, lastSeg.start + Math.max(1, Math.floor((lastSeg.end - lastSeg.start + 1) / 2)));
+  if (defaultWeek <= r.start || defaultWeek > r.end) return;
+  r.splits = r.splits || [];
+  r.splits.push({ week: defaultWeek, hrs: lastSeg.hrs === 40 ? 20 : lastSeg.hrs === 20 ? 10 : 40 });
+  r.splits.sort((a, b) => a.week - b.week);
+  _expandedSplits.add(rid);
+  scheduleChartRender();
+  renderEditor();
+}
+
+function removeSplit(rid, idx) {
+  const r = state.resources.find(x => x.id === rid);
+  if (!r) return;
+  r.splits.splice(idx, 1);
+  scheduleChartRender();
+  renderEditor();
+}
+
+function updateSplit(rid, idx, field, val) {
+  const r = state.resources.find(x => x.id === rid);
+  if (!r || !r.splits[idx]) return;
+  r.splits[idx][field] = val;
+  r.splits.sort((a, b) => a.week - b.week);
+  scheduleChartRender(150);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1257,7 +1325,12 @@ function renderEditor() {
         </select>
       </td>
       <td class="col-fte" style="text-align:center">
-        <span class="fte-badge ${fteBadgeClass(r.hrs)}" id="fte-${r.id}">${fteStr(r.hrs)}</span>
+        <span class="fte-badge ${fteBadgeClass(r.hrs)}" id="fte-${r.id}">${r.splits && r.splits.length ? '~' : ''}${fteStr(r.hrs)}</span>
+        <button class="btn btn-ghost btn-icon btn-sm" title="Allocation splits"
+          onclick="toggleSplits(${r.id})"
+          style="width:18px;height:18px;padding:0;font-size:10px;line-height:1;margin-left:2px;opacity:0.6">
+          ${_expandedSplits.has(r.id) ? '▲' : '▼'}
+        </button>
       </td>
       ${costCells}
       <td class="col-note">
@@ -1275,6 +1348,46 @@ function renderEditor() {
       </td>
     `;
     tbody.appendChild(tr);
+
+    // Split sub-row
+    if (_expandedSplits.has(r.id)) {
+      const splitTr = document.createElement('tr');
+      splitTr.className = 'split-sub-row';
+      const splits = r.splits || [];
+      const segs   = buildSegments(r);
+
+      let splitHtml = `<td colspan="20"><div style="font-size:10px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Allocation splits for ${esc(r.role)}</div>`;
+
+      // Segment preview (read-only)
+      segs.forEach((seg, si) => {
+        const isLast = si === segs.length - 1;
+        splitHtml += `<div class="split-entry" style="color:var(--text-1)">
+          <span style="width:28px;color:var(--text-3);font-size:10px">W${seg.start}${seg.start !== seg.end ? '–W'+seg.end : ''}</span>
+          <span class="fte-badge ${fteBadgeClass(seg.hrs)}">${fteStr(seg.hrs)}</span>
+          ${si > 0 ? `<button class="btn btn-danger-ghost btn-icon btn-sm" style="width:16px;height:16px;padding:0;font-size:9px" onclick="removeSplit(${r.id},${si-1})" title="Remove split">✕</button>` : ''}
+          ${isLast && seg.end === r.end ? '' : ''}
+        </div>`;
+      });
+
+      // Split edit rows (one per split point)
+      splits.forEach((sp, spi) => {
+        splitHtml += `<div class="split-entry">
+          <span style="color:var(--text-3)">from week</span>
+          <input type="number" value="${sp.week}" min="${r.start+1}" max="${r.end}" style="width:50px"
+            oninput="updateSplit(${r.id},${spi},'week',Math.max(${r.start+1},Math.min(+this.value||${r.start+1},${r.end})))">
+          <select onchange="updateSplit(${r.id},${spi},'hrs',+this.value)">
+            <option value="40"${sp.hrs>=40?' selected':''}>100%</option>
+            <option value="20"${sp.hrs>=20&&sp.hrs<40?' selected':''}>50%</option>
+            <option value="10"${sp.hrs<20?' selected':''}>25%</option>
+          </select>
+          <button class="btn btn-danger-ghost btn-icon btn-sm" style="width:16px;height:16px;padding:0;font-size:9px" onclick="removeSplit(${r.id},${spi})">✕</button>
+        </div>`;
+      });
+
+      splitHtml += `<button class="btn btn-ghost btn-sm split-add-btn" onclick="addSplit(${r.id})">+ Add split point</button></td>`;
+      splitTr.innerHTML = splitHtml;
+      tbody.appendChild(splitTr);
+    }
   });
 }
 
@@ -1673,15 +1786,30 @@ function renderChart() {
       'font-family': 'var(--font-sans,system-ui,sans-serif)'
     }, fteStr(r.hrs)));
 
-    const s  = Math.max(1, Math.min(r.start, TW));
-    const e  = Math.max(s, Math.min(r.end, TW));
+    // ── Multi-segment bars (allocation splits) ──
+    const segs = buildSegments(r);
+    svg.appendChild(el('rect', { x: LEFT, y: y + BAR_OFF, width: CHART_W, height: BAR_H, rx: BAR_R, fill: 'rgba(0,0,0,0.05)' }));
+
+    segs.forEach((seg, si) => {
+      const sS  = Math.max(1, Math.min(seg.start, TW));
+      const sE  = Math.max(sS, Math.min(seg.end, TW));
+      const bx  = wkX(sS);
+      const bw  = wkX(sE + 1) - bx;
+      const isF = seg.hrs >= 40, isP = seg.hrs >= 20 && seg.hrs < 40;
+      const segOp = isF ? '0.85' : isP ? '0.52' : '0.28';
+      const segH  = isF ? BAR_H : isP ? Math.round(BAR_H * 0.75) : Math.round(BAR_H * 0.5);
+      const segOff = Math.round((BAR_H - segH) / 2);
+      // No radius on joining edges between adjacent segments
+      const rx = (si === 0 || si === segs.length - 1) ? BAR_R : 0;
+      svg.appendChild(el('rect', { x: bx, y: y + BAR_OFF + segOff, width: bw, height: segH, rx, fill: typeObj.color, opacity: segOp }));
+    });
+
+    // For tag/note labels, use first segment geometry
+    const firstSeg = segs[0];
+    const s  = Math.max(1, Math.min(firstSeg.start, TW));
+    const e  = Math.max(s, Math.min(firstSeg.end, TW));
     const bx = wkX(s);
     const bw = wkX(e + 1) - bx;
-
-    svg.appendChild(el('rect', { x: LEFT, y: y + BAR_OFF, width: CHART_W, height: BAR_H, rx: BAR_R, fill: 'rgba(0,0,0,0.05)' }));
-    const barOpacity = isFull ? '0.85' : isPart ? '0.52' : '0.28';
-    svg.appendChild(el('rect', { x: bx, y: y + BAR_OFF, width: bw, height: BAR_H, rx: BAR_R, fill: typeObj.color, opacity: barOpacity }));
-
     const showTag  = r.tag && bw > 26 && (state.barLabels === 'both' || state.barLabels === 'tag');
     const showNote = r.note && bw > 55 && (state.barLabels === 'both' || state.barLabels === 'note');
     let tagPillW = 0;
