@@ -862,20 +862,28 @@ function renderChart() {
   const TW    = state.totalWeeks;
 
   // Layout
-  const W       = 1040;
-  const LEFT    = 210;
+  const W       = 1080;
+  const LEFT    = 252;   // wider left panel — prevents role name overflow into type col
   const R_PAD   = 18;
   const CHART_W = W - LEFT - R_PAD;
   const ROW_H   = state.rowH || 36;
-  const BAR_H   = Math.round(ROW_H * 0.56);
+  const BAR_H   = Math.round(ROW_H * 0.54);
   const BAR_R   = Math.round(BAR_H / 2.2);
   const BAR_OFF = Math.round((ROW_H - BAR_H) / 2);
-  const PH_H    = 38;      // phase header height
+  const PH_H    = 40;      // phase header height
   const WL_H    = 22;      // week labels height
   const TOP_PAD = PH_H + WL_H + 2;
-  const CAP_H   = state.showCapacity ? 52 : 0;
-  const CAP_PAD = state.showCapacity && active.length > 0 ? 6 : 0;
-  const BOT_PAD = 14;
+  const CAP_H   = state.showCapacity ? 58 : 0;
+  const CAP_PAD = state.showCapacity && active.length > 0 ? 8 : 0;
+  const BOT_PAD = 16;
+
+  // Left panel column positions
+  const COL_ROLE_X  = 14;          // role name start
+  const COL_TYPE_X  = LEFT - 76;   // type dot center x
+  const COL_HRS_X   = LEFT - 9;    // hrs label right-align x
+  // safe role name width: COL_TYPE_X - COL_ROLE_X - 8px gap
+  const ROLE_MAX_PX = COL_TYPE_X - COL_ROLE_X - 8;
+  const ROLE_MAX_CH = Math.floor(ROLE_MAX_PX / 6.3); // ~6.3px per char at font-size 11
   const TOTAL_H = TOP_PAD + active.length * ROW_H + CAP_PAD + CAP_H + BOT_PAD;
 
   const wkW = CHART_W / TW;
@@ -932,8 +940,13 @@ function renderChart() {
 
   // ── Background ──
   svg.appendChild(el('rect', { x:0, y:0, width:W, height:TOTAL_H, fill:'#F8FAFC' }));
-  // Left panel bg — pure white
-  svg.appendChild(el('rect', { x:0, y:0, width:LEFT, height:TOTAL_H, fill:'#FFFFFF' }));
+
+  // Left panel bg — pure white with a subtle right fade to give depth
+  const lpGrad = el('linearGradient', { id:'lp-grad', x1:'0%', y1:'0%', x2:'100%', y2:'0%' });
+  lpGrad.appendChild(el('stop', { offset:'85%', 'stop-color':'#FFFFFF', 'stop-opacity':'1' }));
+  lpGrad.appendChild(el('stop', { offset:'100%', 'stop-color':'#F1F5F9', 'stop-opacity':'1' }));
+  defs.appendChild(lpGrad);
+  svg.appendChild(el('rect', { x:0, y:0, width:LEFT, height:TOTAL_H, fill:'url(#lp-grad)' }));
 
   // ── Phase bands ──
   state.phases.forEach((p, pi) => {
@@ -956,24 +969,26 @@ function renderChart() {
       fill: `url(#gb-${pi})`
     }));
 
-    // Phase label (large)
+    // Phase label — centered or with sub-label if space allows
     const abbr = p.name.length > 22 ? p.name.slice(0, 20) + '…' : p.name;
+    const durLabel = state.startDate
+      ? `${wkLabel(pStart)} – ${wkLabel(pEnd)}`
+      : `W${pStart}–W${pEnd}`;
+    const showDur = w > 60;
+
     svg.appendChild(el('text', {
-      x: x + w / 2, y: PH_H * 0.42,
+      x: x + w / 2,
+      y: showDur ? PH_H * 0.38 : PH_H / 2,
       'text-anchor': 'middle', 'dominant-baseline': 'central',
       'font-size': '10.5', 'font-weight': '700', fill: 'rgba(255,255,255,0.97)',
-      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.02em'
+      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.01em'
     }, abbr));
 
-    // Duration sub-label
-    if (w > 55) {
-      const durLabel = state.startDate
-        ? `${wkLabel(pStart)} – ${wkLabel(pEnd)}`
-        : `W${pStart} – W${pEnd}`;
+    if (showDur) {
       svg.appendChild(el('text', {
-        x: x + w / 2, y: PH_H * 0.78,
+        x: x + w / 2, y: PH_H * 0.76,
         'text-anchor': 'middle', 'dominant-baseline': 'central',
-        'font-size': '8.5', 'font-weight': '500', fill: 'rgba(255,255,255,0.55)',
+        'font-size': '8', 'font-weight': '500', fill: 'rgba(255,255,255,0.52)',
         'font-family': 'var(--font-sans,system-ui,sans-serif)'
       }, durLabel));
     }
@@ -1032,19 +1047,24 @@ function renderChart() {
   });
 
   // ── Left panel column headers ──
-  [['ROLE / NAME', 10], ['TYPE', LEFT - 82], ['HRS', LEFT - 16]].forEach(([lbl, x]) => {
+  [
+    ['ROLE / NAME', COL_ROLE_X],
+    ['TYPE',        COL_TYPE_X - 2],
+    ['HRS',         COL_HRS_X - 2, 'end'],
+  ].forEach(([lbl, x, anchor = 'start']) => {
     svg.appendChild(el('text', {
       x, y: PH_H + WL_H / 2 + 1,
       'dominant-baseline': 'central',
-      'font-size': '8', 'font-weight': '700', fill: '#94A3B8',
-      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.06em'
+      'text-anchor': anchor,
+      'font-size': '7.5', 'font-weight': '700', fill: '#94A3B8',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.07em'
     }, lbl));
   });
 
   // ── Left panel / chart separator ──
   svg.appendChild(el('line', {
     x1: LEFT - 1, x2: LEFT - 1, y1: 0, y2: TOTAL_H,
-    stroke: '#E2E8F0', 'stroke-width': '1'
+    stroke: '#CBD5E1', 'stroke-width': '1'
   }));
 
   // ── Resource rows ──
@@ -1059,40 +1079,48 @@ function renderChart() {
       svg.appendChild(el('rect', { x:0, y, width:W, height:ROW_H, fill:'rgba(248,250,252,0.65)' }));
     }
 
-    // Row bottom divider
+    // Row bottom divider — slightly more visible
     svg.appendChild(el('line', {
       x1:0, x2:W, y1:y+ROW_H, y2:y+ROW_H,
-      stroke:'#F1F5F9', 'stroke-width':'1'
+      stroke:'#E9EEF4', 'stroke-width':'1'
     }));
 
-    // ── Left panel content ──
-    const nameStr = r.role.length > 28 ? r.role.slice(0, 26) + '…' : r.role;
+    // Type color accent bar on far left (3px)
+    svg.appendChild(el('rect', {
+      x: 0, y: y + 4, width: 3, height: ROW_H - 8,
+      rx: '1.5', fill: typeObj.color, opacity: '0.55'
+    }));
+
+    // ── Role name — mathematically clamped to available width ──
+    const nameStr = r.role.length > ROLE_MAX_CH
+      ? r.role.slice(0, ROLE_MAX_CH - 1) + '…'
+      : r.role;
     svg.appendChild(el('text', {
-      x: 10, y: y + ROW_H / 2,
+      x: COL_ROLE_X, y: y + ROW_H / 2,
       'dominant-baseline': 'central',
       'font-size': '11', 'font-weight': '500', fill: '#1E293B',
       'font-family': 'var(--font-sans,system-ui,sans-serif)'
     }, nameStr));
 
-    // Type dot + abbrev
-    const dotX = LEFT - 88;
+    // ── Type: colored dot + short label ──
     svg.appendChild(el('circle', {
-      cx: dotX + 5, cy: y + ROW_H / 2, r: '4.5',
-      fill: typeObj.color, opacity: '0.88'
+      cx: COL_TYPE_X + 4, cy: y + ROW_H / 2, r: '4',
+      fill: typeObj.color, opacity: '0.85'
     }));
-    const typeAbbr = typeObj.name.slice(0, 4).toUpperCase();
+    // Type abbrev — up to 3 chars, tight after dot
+    const typeAbbr = typeObj.name.slice(0, 3).toUpperCase();
     svg.appendChild(el('text', {
-      x: dotX + 13, y: y + ROW_H / 2,
+      x: COL_TYPE_X + 11, y: y + ROW_H / 2,
       'dominant-baseline': 'central',
-      'font-size': '9', fill: '#64748B',
+      'font-size': '8.5', 'font-weight': '500', fill: '#64748B',
       'font-family': 'var(--font-sans,system-ui,sans-serif)'
     }, typeAbbr));
 
-    // Hrs label (right-aligned before separator)
+    // ── Hrs label — right-aligned, with amber/gray for part-time ──
     const hrsColor = isFull ? '#475569' : isPart ? '#D97706' : '#94A3B8';
     const hrsFw    = isFull ? '400' : '600';
     svg.appendChild(el('text', {
-      x: LEFT - 6, y: y + ROW_H / 2,
+      x: COL_HRS_X, y: y + ROW_H / 2,
       'text-anchor': 'end', 'dominant-baseline': 'central',
       'font-size': '9.5', 'font-weight': hrsFw, fill: hrsColor,
       'font-family': 'var(--font-sans,system-ui,sans-serif)'
@@ -1175,24 +1203,25 @@ function renderChart() {
   // ── Capacity heatmap ──
   if (state.showCapacity && active.length > 0) {
     const capY    = TOP_PAD + active.length * ROW_H + CAP_PAD;
-    const barMaxH = CAP_H - 18;
+    const LABEL_H = 14;                       // top label row height
+    const barMaxH = CAP_H - LABEL_H - 8;     // bars fill the rest
 
-    // BG
+    // BG — full row
     svg.appendChild(el('rect', {
       x: 0, y: capY, width: W, height: CAP_H,
-      fill: 'rgba(241,245,249,0.55)'
+      fill: '#F1F5F9'
     }));
     svg.appendChild(el('line', {
       x1: 0, x2: W, y1: capY, y2: capY,
-      stroke: '#E2E8F0', 'stroke-width': '1'
+      stroke: '#CBD5E1', 'stroke-width': '1'
     }));
 
-    // Label
+    // Left panel label — sits in the label row above the bars
     svg.appendChild(el('text', {
-      x: 10, y: capY + CAP_H / 2,
+      x: COL_ROLE_X, y: capY + LABEL_H / 2,
       'dominant-baseline': 'central',
-      'font-size': '8', 'font-weight': '700', fill: '#94A3B8',
-      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.06em'
+      'font-size': '7.5', 'font-weight': '700', fill: '#94A3B8',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.07em'
     }, 'CAPACITY'));
 
     // FTE per week
@@ -1209,10 +1238,10 @@ function renderChart() {
     ftePW.forEach((fte, wi) => {
       if (fte === 0) return;
       const t   = maxFTE > 0 ? fte / maxFTE : 0;
-      const bh  = t * barMaxH;
+      const bh  = Math.max(2, t * barMaxH);
       const bx  = wkX(wi + 1);
       const bw2 = Math.max(0.5, wkW - 0.8);
-      const by  = capY + CAP_H - bh - 4;
+      const by  = capY + CAP_H - bh - 5;
       const fill = lerpColor('#93C5FD', '#1D4ED8', t);
       barsGrp.appendChild(el('rect', {
         x: bx, y: by, width: bw2, height: bh,
@@ -1221,19 +1250,25 @@ function renderChart() {
     });
     svg.appendChild(barsGrp);
 
-    // Max FTE label
+    // Max FTE label — sits in the label row, right-aligned in chart area
     if (maxFTE > 0) {
       svg.appendChild(el('text', {
-        x: LEFT + 4, y: capY + 3,
-        'dominant-baseline': 'hanging',
+        x: LEFT + CHART_W, y: capY + LABEL_H / 2,
+        'text-anchor': 'end', 'dominant-baseline': 'central',
         'font-size': '7.5', fill: '#64748B',
         'font-family': 'var(--font-sans,system-ui,sans-serif)'
-      }, `↑ ${maxFTE.toFixed(1)} FTE peak`));
+      }, `peak ${maxFTE.toFixed(1)} FTE`));
     }
+
+    // Thin label/bar divider
+    svg.appendChild(el('line', {
+      x1: LEFT, x2: LEFT + CHART_W, y1: capY + LABEL_H, y2: capY + LABEL_H,
+      stroke: '#E2E8F0', 'stroke-width': '0.5'
+    }));
 
     // Baseline
     svg.appendChild(el('line', {
-      x1: LEFT, x2: LEFT + CHART_W, y1: capY + CAP_H - 4, y2: capY + CAP_H - 4,
+      x1: LEFT, x2: LEFT + CHART_W, y1: capY + CAP_H - 5, y2: capY + CAP_H - 5,
       stroke: '#CBD5E1', 'stroke-width': '1'
     }));
   }
