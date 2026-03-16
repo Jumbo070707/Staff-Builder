@@ -405,6 +405,10 @@ input[type=checkbox] {
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><circle cx="6" cy="6" r="2" fill="currentColor"/></svg>
         Types
       </button>
+      <button class="btn" onclick="openModal('milestones-modal'); renderMilestoneList()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polygon points="6,1 11,6 6,11 1,6" stroke="currentColor" stroke-width="1.2" fill="none"/></svg>
+        Milestones
+      </button>
       <button class="btn" onclick="openModal('settings-modal')">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="2" stroke="currentColor" stroke-width="1.2"/><path d="M6 1v1M6 10v1M1 6h1M10 6h1M2.5 2.5l.7.7M8.8 8.8l.7.7M9.5 2.5l-.7.7M3.2 8.8l-.7.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/></svg>
         Settings
@@ -528,6 +532,32 @@ input[type=checkbox] {
   </div>
 </div>
 
+<!-- ══════════ MILESTONES MODAL ══════════ -->
+<div class="modal-backdrop" id="milestones-modal" onclick="if(event.target===this){closeModal('milestones-modal');scheduleChartRender()}">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Milestones</span>
+      <button class="btn btn-ghost btn-icon btn-sm" onclick="closeModal('milestones-modal');scheduleChartRender()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text-2);margin-bottom:12px;line-height:1.6">
+        Mark key checkpoints on the timeline. Each milestone appears as a ◆ diamond with a dashed guide line through the chart.
+      </p>
+      <div class="edit-list-header">
+        <div style="flex:1">Milestone name</div>
+        <div style="width:54px;text-align:center">Week</div>
+        <div style="width:28px;text-align:center">Color</div>
+        <div style="width:24px"></div>
+      </div>
+      <div id="milestone-edit-list"></div>
+      <button class="btn btn-ghost" style="margin-top:10px;width:100%;border-style:dashed" onclick="addMilestone()">+ Add milestone</button>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="closeModal('milestones-modal');scheduleChartRender()">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════ SETTINGS MODAL ══════════ -->
 <div class="modal-backdrop" id="settings-modal" onclick="if(event.target===this)closeModal('settings-modal')">
   <div class="modal">
@@ -609,6 +639,22 @@ input[type=checkbox] {
             <option value="CAD">CAD (C$)</option>
           </select>
         </div>
+        <div class="field">
+          <label class="field-label">Swimlane grouping</label>
+          <select id="set-swimlanes" onchange="state.swimlanes=this.value==='true'; scheduleFullRender()">
+            <option value="true" selected>Group by type</option>
+            <option value="false">Flat list</option>
+          </select>
+          <div class="field-hint">Groups Gantt rows by resource type</div>
+        </div>
+        <div class="field">
+          <label class="field-label">Today marker</label>
+          <select id="set-todaymarker" onchange="state.showTodayMarker=this.value==='true'; scheduleChartRender()">
+            <option value="true" selected>Show (uses start date)</option>
+            <option value="false">Hide</option>
+          </select>
+          <div class="field-hint">Requires a start date to calculate current week</div>
+        </div>
       </div>
     </div>
     <div class="modal-footer">
@@ -676,6 +722,14 @@ const state = {
   barLabels:         'both',
   showCost:          false,
   currency:          'USD',
+  swimlanes:         true,
+  showTodayMarker:   true,
+
+  milestones: [
+    { id: 1, name: 'Discovery Complete', week:  6, color: '#6366F1' },
+    { id: 2, name: 'MVP Go-Live',        week: 16, color: '#059669' },
+    { id: 3, name: 'Full Launch',        week: 32, color: '#DC2626' },
+  ],
 
   types: [
     { id: 'onshore',  name: 'Onshore',  color: '#2563EB' },
@@ -1013,25 +1067,48 @@ function renderChart() {
   const LEFT    = 252;   // wider left panel — prevents role name overflow into type col
   const R_PAD   = 18;
   const CHART_W = W - LEFT - R_PAD;
-  const ROW_H   = state.rowH || 36;
-  const BAR_H   = Math.round(ROW_H * 0.54);
-  const BAR_R   = 3;
-  const BAR_OFF = Math.round((ROW_H - BAR_H) / 2);
-  const PH_H    = 40;      // phase header height
-  const WL_H    = 22;      // week labels height
-  const TOP_PAD = PH_H + WL_H + 2;
-  const CAP_H   = state.showCapacity ? 58 : 0;
-  const CAP_PAD = state.showCapacity && active.length > 0 ? 8 : 0;
-  const BOT_PAD = 16;
+  const ROW_H     = state.rowH || 36;
+  const BAR_H     = Math.round(ROW_H * 0.54);
+  const BAR_R     = 3;
+  const BAR_OFF   = Math.round((ROW_H - BAR_H) / 2);
+  const PH_H      = 40;    // phase header height
+  const MS_H      = (state.milestones && state.milestones.length > 0) ? 20 : 0; // milestone row
+  const WL_H      = 22;    // week labels height
+  const SECTION_H = 20;    // swimlane type header height
+  const CAP_H     = state.showCapacity ? 58 : 0;
+  const CAP_PAD   = state.showCapacity && active.length > 0 ? 8 : 0;
+  const BOT_PAD   = 16;
 
   // Left panel column positions
-  const COL_ROLE_X  = 14;          // role name start
-  const COL_TYPE_X  = LEFT - 76;   // type dot center x
-  const COL_HRS_X   = LEFT - 9;    // hrs label right-align x
-  // safe role name width: COL_TYPE_X - COL_ROLE_X - 8px gap
+  const COL_ROLE_X  = 14;
+  const COL_TYPE_X  = LEFT - 76;
+  const COL_HRS_X   = LEFT - 9;
   const ROLE_MAX_PX = COL_TYPE_X - COL_ROLE_X - 8;
-  const ROLE_MAX_CH = Math.floor(ROLE_MAX_PX / 6.3); // ~6.3px per char at font-size 11
-  const TOTAL_H = TOP_PAD + active.length * ROW_H + CAP_PAD + CAP_H + BOT_PAD;
+  const ROLE_MAX_CH = Math.floor(ROLE_MAX_PX / 6.3);
+
+  // Build row plan — swimlane grouping or flat
+  const rowPlan = [];
+  if (state.swimlanes) {
+    const typeOrder = state.types.map(t => t.id);
+    const seenIds   = new Set(typeOrder);
+    const groups    = typeOrder
+      .map(tid => ({ typeObj: state.types.find(t => t.id === tid), rows: active.filter(r => r.type === tid) }))
+      .filter(g => g.rows.length > 0);
+    const orphans = active.filter(r => !seenIds.has(r.type));
+    groups.forEach(g => {
+      rowPlan.push({ kind: 'section', typeObj: g.typeObj, count: g.rows.length });
+      g.rows.forEach(r => rowPlan.push({ kind: 'row', r }));
+    });
+    if (orphans.length > 0) {
+      rowPlan.push({ kind: 'section', typeObj: { name: 'Other', color: '#94A3B8' }, count: orphans.length });
+      orphans.forEach(r => rowPlan.push({ kind: 'row', r }));
+    }
+  } else {
+    active.forEach(r => rowPlan.push({ kind: 'row', r }));
+  }
+  const contentH = rowPlan.reduce((h, item) => h + (item.kind === 'section' ? SECTION_H : ROW_H), 0);
+  const TOP_PAD  = PH_H + MS_H + WL_H + 2;
+  const TOTAL_H  = TOP_PAD + contentH + CAP_PAD + CAP_H + BOT_PAD;
 
   const wkW = CHART_W / TW;
   function wkX(wk) { return LEFT + (wk - 1) * wkW; }
@@ -1116,10 +1193,44 @@ function renderChart() {
     }));
   });
 
+  // ── Milestone row ──
+  if (MS_H > 0) {
+    const msY = PH_H;
+    svg.appendChild(el('rect', { x: 0, y: msY, width: W, height: MS_H, fill: '#F8FAFC' }));
+    svg.appendChild(el('line', { x1: 0, x2: W, y1: msY + MS_H, y2: msY + MS_H, stroke: '#E2E8F0', 'stroke-width': '0.8' }));
+    state.milestones.forEach(m => {
+      const mwk = Math.max(1, Math.min(m.week, TW));
+      const mx  = wkX(mwk) + wkW / 2;
+      const cy  = msY + MS_H / 2;
+      const sz  = 5;
+      // Dashed guide through rows
+      svg.appendChild(el('line', {
+        x1: mx, x2: mx, y1: msY + MS_H, y2: TOP_PAD + contentH,
+        stroke: m.color, 'stroke-width': '1', 'stroke-dasharray': '4,3', opacity: '0.35'
+      }));
+      // Diamond
+      svg.appendChild(el('polygon', {
+        points: `${mx},${cy - sz} ${mx + sz},${cy} ${mx},${cy + sz} ${mx - sz},${cy}`,
+        fill: m.color
+      }));
+      // Label
+      const nearRight = mwk > TW * 0.8;
+      const lx        = nearRight ? mx - sz - 4 : mx + sz + 4;
+      const anchor    = nearRight ? 'end' : 'start';
+      const maxCh     = 20;
+      const label     = m.name.length > maxCh ? m.name.slice(0, maxCh - 1) + '…' : m.name;
+      svg.appendChild(el('text', {
+        x: lx, y: cy, 'dominant-baseline': 'central', 'text-anchor': anchor,
+        'font-size': '7.5', 'font-weight': '600', fill: m.color,
+        'font-family': 'var(--font-sans,system-ui,sans-serif)'
+      }, label));
+    });
+  }
+
   // ── Week label separator ──
-  svg.appendChild(el('rect', { x: 0, y: PH_H, width: W, height: WL_H, fill: 'rgba(248,250,252,0.92)' }));
-  svg.appendChild(el('line', { x1:0, x2:W, y1:PH_H, y2:PH_H, stroke:'rgba(226,232,240,0.7)', 'stroke-width':'1' }));
-  svg.appendChild(el('line', { x1:0, x2:W, y1:PH_H+WL_H, y2:PH_H+WL_H, stroke:'rgba(226,232,240,0.9)', 'stroke-width':'1' }));
+  svg.appendChild(el('rect', { x: 0, y: PH_H + MS_H, width: W, height: WL_H, fill: 'rgba(248,250,252,0.92)' }));
+  svg.appendChild(el('line', { x1:0, x2:W, y1:PH_H + MS_H, y2:PH_H + MS_H, stroke:'rgba(226,232,240,0.7)', 'stroke-width':'1' }));
+  svg.appendChild(el('line', { x1:0, x2:W, y1:PH_H + MS_H + WL_H, y2:PH_H + MS_H + WL_H, stroke:'rgba(226,232,240,0.9)', 'stroke-width':'1' }));
 
   // ── Week gridlines ──
   const wkInterval = state.weekLabelInterval || 4;
@@ -1128,7 +1239,7 @@ function renderChart() {
     if (!major) continue;
     const x = wkX(w);
     svg.appendChild(el('line', {
-      x1: x, x2: x, y1: PH_H + WL_H, y2: TOTAL_H - BOT_PAD,
+      x1: x, x2: x, y1: PH_H + MS_H + WL_H, y2: TOTAL_H - BOT_PAD,
       stroke: '#E2E8F0', 'stroke-width': '0.7', opacity: '0.8'
     }));
   }
@@ -1136,7 +1247,7 @@ function renderChart() {
   for (let w = 1; w <= TW + 1; w++) {
     const x = wkX(w);
     svg.appendChild(el('line', {
-      x1: x, x2: x, y1: PH_H + WL_H, y2: TOTAL_H - BOT_PAD,
+      x1: x, x2: x, y1: PH_H + MS_H + WL_H, y2: TOTAL_H - BOT_PAD,
       stroke: '#E2E8F0', 'stroke-width': '0.3', opacity: '0.5'
     }));
   }
@@ -1150,7 +1261,7 @@ function renderChart() {
   labeledWks.forEach(wk => {
     const x = wkX(wk) + wkW / 2;
     svg.appendChild(el('text', {
-      x, y: PH_H + WL_H / 2 + 1,
+      x, y: PH_H + MS_H + WL_H / 2 + 1,
       'text-anchor': 'middle', 'dominant-baseline': 'central',
       'font-size': '8.5', fill: '#64748B',
       'font-family': 'var(--font-sans,system-ui,sans-serif)'
@@ -1164,7 +1275,7 @@ function renderChart() {
     ['FTE',         COL_HRS_X - 2, 'end'],
   ].forEach(([lbl, x, anchor = 'start']) => {
     svg.appendChild(el('text', {
-      x, y: PH_H + WL_H / 2 + 1,
+      x, y: PH_H + MS_H + WL_H / 2 + 1,
       'dominant-baseline': 'central',
       'text-anchor': anchor,
       'font-size': '7.5', 'font-weight': '700', fill: '#94A3B8',
@@ -1178,96 +1289,83 @@ function renderChart() {
     stroke: '#CBD5E1', 'stroke-width': '1'
   }));
 
-  // ── Resource rows ──
-  active.forEach((r, i) => {
-    const y      = TOP_PAD + i * ROW_H;
-    const typeObj = getType(r.type);
-    const isFull = r.hrs >= 40;
-    const isPart = r.hrs >= 20 && r.hrs < 40;
-
-    // Alt row bg
-    if (i % 2 === 1) {
-      svg.appendChild(el('rect', { x:0, y, width:W, height:ROW_H, fill:'rgba(248,250,252,0.65)' }));
+  // ── Row plan rendering: swimlane headers + resource rows ──
+  let rowI = 0;
+  let rowY = TOP_PAD;
+  rowPlan.forEach(item => {
+    if (item.kind === 'section') {
+      const y = rowY;
+      svg.appendChild(el('rect', { x: 0, y, width: W, height: SECTION_H, fill: item.typeObj.color, opacity: '0.07' }));
+      svg.appendChild(el('rect', { x: 0, y, width: 3, height: SECTION_H, fill: item.typeObj.color, opacity: '0.7' }));
+      svg.appendChild(el('text', {
+        x: COL_ROLE_X, y: y + SECTION_H / 2, 'dominant-baseline': 'central',
+        'font-size': '8.5', 'font-weight': '700', fill: item.typeObj.color,
+        'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.07em'
+      }, item.typeObj.name.toUpperCase()));
+      svg.appendChild(el('text', {
+        x: COL_ROLE_X + item.typeObj.name.length * 6 + 10, y: y + SECTION_H / 2,
+        'dominant-baseline': 'central', 'font-size': '8', fill: '#94A3B8',
+        'font-family': 'var(--font-sans,system-ui,sans-serif)'
+      }, `· ${item.count} ${item.count === 1 ? 'role' : 'roles'}`));
+      svg.appendChild(el('line', {
+        x1: 0, x2: W, y1: y + SECTION_H, y2: y + SECTION_H,
+        stroke: item.typeObj.color, 'stroke-width': '0.6', opacity: '0.3'
+      }));
+      rowY += SECTION_H;
+      return;
     }
 
-    // Row bottom divider — slightly more visible
-    svg.appendChild(el('line', {
-      x1:0, x2:W, y1:y+ROW_H, y2:y+ROW_H,
-      stroke:'#E9EEF4', 'stroke-width':'1'
-    }));
+    const r       = item.r;
+    const y       = rowY;
+    const typeObj = getType(r.type);
+    const isFull  = r.hrs >= 40;
+    const isPart  = r.hrs >= 20 && r.hrs < 40;
 
-    // Type color accent bar on far left (3px)
-    svg.appendChild(el('rect', {
-      x: 0, y: y + 4, width: 3, height: ROW_H - 8,
-      rx: '1.5', fill: typeObj.color, opacity: '0.55'
-    }));
+    if (rowI % 2 === 1) {
+      svg.appendChild(el('rect', { x:0, y, width:W, height:ROW_H, fill:'rgba(248,250,252,0.65)' }));
+    }
+    rowI++;
 
-    // ── Role name — mathematically clamped to available width ──
-    const nameStr = r.role.length > ROLE_MAX_CH
-      ? r.role.slice(0, ROLE_MAX_CH - 1) + '…'
-      : r.role;
+    svg.appendChild(el('line', { x1:0, x2:W, y1:y+ROW_H, y2:y+ROW_H, stroke:'#E9EEF4', 'stroke-width':'1' }));
+    svg.appendChild(el('rect', { x: 0, y: y + 4, width: 3, height: ROW_H - 8, rx: '1.5', fill: typeObj.color, opacity: '0.55' }));
+
+    const nameStr = r.role.length > ROLE_MAX_CH ? r.role.slice(0, ROLE_MAX_CH - 1) + '…' : r.role;
     svg.appendChild(el('text', {
-      x: COL_ROLE_X, y: y + ROW_H / 2,
-      'dominant-baseline': 'central',
+      x: COL_ROLE_X, y: y + ROW_H / 2, 'dominant-baseline': 'central',
       'font-size': '11', 'font-weight': '500', fill: '#1E293B',
       'font-family': 'var(--font-sans,system-ui,sans-serif)'
     }, nameStr));
 
-    // ── Type: colored dot + short label ──
-    svg.appendChild(el('circle', {
-      cx: COL_TYPE_X + 4, cy: y + ROW_H / 2, r: '4',
-      fill: typeObj.color, opacity: '0.85'
-    }));
-    // Type abbrev — up to 3 chars, tight after dot
-    const typeAbbr = typeObj.name.slice(0, 3).toUpperCase();
+    svg.appendChild(el('circle', { cx: COL_TYPE_X + 4, cy: y + ROW_H / 2, r: '4', fill: typeObj.color, opacity: '0.85' }));
     svg.appendChild(el('text', {
-      x: COL_TYPE_X + 11, y: y + ROW_H / 2,
-      'dominant-baseline': 'central',
+      x: COL_TYPE_X + 11, y: y + ROW_H / 2, 'dominant-baseline': 'central',
       'font-size': '8.5', 'font-weight': '500', fill: '#64748B',
       'font-family': 'var(--font-sans,system-ui,sans-serif)'
-    }, typeAbbr));
+    }, typeObj.name.slice(0, 3).toUpperCase()));
 
-    // ── Hrs label — right-aligned, with amber/gray for part-time ──
     const hrsColor = isFull ? '#475569' : isPart ? '#D97706' : '#94A3B8';
-    const hrsFw    = isFull ? '400' : '600';
     svg.appendChild(el('text', {
-      x: COL_HRS_X, y: y + ROW_H / 2,
-      'text-anchor': 'end', 'dominant-baseline': 'central',
-      'font-size': '9.5', 'font-weight': hrsFw, fill: hrsColor,
+      x: COL_HRS_X, y: y + ROW_H / 2, 'text-anchor': 'end', 'dominant-baseline': 'central',
+      'font-size': '9.5', 'font-weight': isFull ? '400' : '600', fill: hrsColor,
       'font-family': 'var(--font-sans,system-ui,sans-serif)'
     }, fteStr(r.hrs)));
 
-    // ── Chart area bar ──
     const s  = Math.max(1, Math.min(r.start, TW));
     const e  = Math.max(s, Math.min(r.end, TW));
     const bx = wkX(s);
     const bw = wkX(e + 1) - bx;
 
-    // Track guide — flat row channel
-    svg.appendChild(el('rect', {
-      x: LEFT, y: y + BAR_OFF, width: CHART_W, height: BAR_H,
-      rx: BAR_R, fill: 'rgba(0,0,0,0.05)'
-    }));
-
-    // Main bar — flat solid fill, opacity by FTE level
+    svg.appendChild(el('rect', { x: LEFT, y: y + BAR_OFF, width: CHART_W, height: BAR_H, rx: BAR_R, fill: 'rgba(0,0,0,0.05)' }));
     const barOpacity = isFull ? '0.85' : isPart ? '0.52' : '0.28';
-    svg.appendChild(el('rect', {
-      x: bx, y: y + BAR_OFF, width: bw, height: BAR_H,
-      rx: BAR_R, fill: typeObj.color, opacity: barOpacity
-    }));
+    svg.appendChild(el('rect', { x: bx, y: y + BAR_OFF, width: bw, height: BAR_H, rx: BAR_R, fill: typeObj.color, opacity: barOpacity }));
 
-    // Tag pill
     const showTag  = r.tag && bw > 26 && (state.barLabels === 'both' || state.barLabels === 'tag');
     const showNote = r.note && bw > 55 && (state.barLabels === 'both' || state.barLabels === 'note');
-
     let tagPillW = 0;
     if (showTag) {
       tagPillW = Math.min(38, bw - 8);
       const pillX = bx + 5;
-      svg.appendChild(el('rect', {
-        x: pillX, y: y + BAR_OFF + 3.5, width: tagPillW, height: BAR_H - 7,
-        rx: '3', fill: 'rgba(0,0,0,0.22)'
-      }));
+      svg.appendChild(el('rect', { x: pillX, y: y + BAR_OFF + 3.5, width: tagPillW, height: BAR_H - 7, rx: '3', fill: 'rgba(0,0,0,0.22)' }));
       svg.appendChild(el('text', {
         x: pillX + tagPillW / 2, y: y + BAR_OFF + BAR_H / 2 + 0.5,
         'text-anchor': 'middle', 'dominant-baseline': 'central',
@@ -1275,19 +1373,18 @@ function renderChart() {
         'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.04em'
       }, r.tag.slice(0, 5).toUpperCase()));
     }
-
     if (showNote) {
-      const noteX  = bx + (showTag ? tagPillW + 10 : 8);
-      const availW = bw - (showTag ? tagPillW + 16 : 14);
-      const maxCh  = Math.max(0, Math.floor(availW / 6.2));
+      const noteX   = bx + (showTag ? tagPillW + 10 : 8);
+      const availW  = bw - (showTag ? tagPillW + 16 : 14);
+      const maxCh   = Math.max(0, Math.floor(availW / 6.2));
       const noteStr = r.note.length > maxCh ? r.note.slice(0, maxCh - 1) + '…' : r.note;
       svg.appendChild(el('text', {
-        x: noteX, y: y + BAR_OFF + BAR_H / 2 + 0.5,
-        'dominant-baseline': 'central',
+        x: noteX, y: y + BAR_OFF + BAR_H / 2 + 0.5, 'dominant-baseline': 'central',
         'font-size': '9', fill: 'rgba(255,255,255,0.90)',
         'font-family': 'var(--font-sans,system-ui,sans-serif)'
       }, noteStr));
     }
+    rowY += ROW_H;
   });
 
   // ── Row header divider (below week labels) ──
@@ -1300,9 +1397,34 @@ function renderChart() {
     }, 'No active resources — add roles or enable existing ones'));
   }
 
+  // ── Today marker ──
+  const todayWk = getTodayWk();
+  if (todayWk !== null) {
+    const tx        = wkX(todayWk) + wkW / 2;
+    const markerTop = PH_H + MS_H + WL_H;
+    // Dashed vertical line through rows
+    svg.appendChild(el('line', {
+      x1: tx, x2: tx, y1: markerTop, y2: TOP_PAD + contentH,
+      stroke: '#F59E0B', 'stroke-width': '1.5', 'stroke-dasharray': '5,3', opacity: '0.75'
+    }));
+    // TODAY pill in week label row
+    const pillW = 40;
+    const pillH = 14;
+    svg.appendChild(el('rect', {
+      x: tx - pillW / 2, y: PH_H + MS_H + (WL_H - pillH) / 2,
+      width: pillW, height: pillH, rx: '3', fill: '#F59E0B'
+    }));
+    svg.appendChild(el('text', {
+      x: tx, y: PH_H + MS_H + WL_H / 2 + 0.5,
+      'text-anchor': 'middle', 'dominant-baseline': 'central',
+      'font-size': '7.5', 'font-weight': '700', fill: '#FFFFFF',
+      'font-family': 'var(--font-sans,system-ui,sans-serif)', 'letter-spacing': '0.05em'
+    }, 'TODAY'));
+  }
+
   // ── Capacity heatmap ──
   if (state.showCapacity && active.length > 0) {
-    const capY    = TOP_PAD + active.length * ROW_H + CAP_PAD;
+    const capY    = TOP_PAD + contentH + CAP_PAD;
     const LABEL_H = 14;                       // top label row height
     const barMaxH = CAP_H - LABEL_H - 8;     // bars fill the rest
 
@@ -1398,6 +1520,75 @@ function renderChart() {
   `).join('');
 
   legend.innerHTML = typeItems + '<div class="legend-sep"></div>' + phaseItems;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Today Marker
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function getTodayWk() {
+  if (!state.showTodayMarker || !state.startDate) return null;
+  try {
+    const start    = new Date(state.startDate + 'T00:00:00');
+    const today    = new Date();
+    const diffDays = Math.floor((today - start) / (1000 * 60 * 60 * 24));
+    const wk       = Math.floor(diffDays / 7) + 1;
+    return (wk >= 1 && wk <= state.totalWeeks) ? wk : null;
+  } catch(e) { return null; }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  Milestone Editor
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let milestoneUid = 200;
+
+function addMilestone() {
+  state.milestones.push({
+    id: milestoneUid++,
+    name: 'New Milestone',
+    week: Math.ceil(state.totalWeeks / 2),
+    color: '#6366F1'
+  });
+  renderMilestoneList();
+  scheduleChartRender();
+}
+
+function removeMilestone(id) {
+  state.milestones = state.milestones.filter(m => m.id !== id);
+  renderMilestoneList();
+  scheduleChartRender();
+}
+
+function updateMilestone(id, field, value) {
+  const m = state.milestones.find(m => m.id === id);
+  if (m) { m[field] = value; scheduleChartRender(150); }
+}
+
+function renderMilestoneList() {
+  const list = document.getElementById('milestone-edit-list');
+  list.innerHTML = '';
+  state.milestones.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'edit-row';
+    row.innerHTML = `
+      <div style="flex:1">
+        <input type="text" value="${esc(m.name)}" placeholder="Milestone name"
+          oninput="updateMilestone(${m.id},'name',this.value)">
+      </div>
+      <div style="width:54px">
+        <input type="number" value="${m.week}" min="1" max="${state.totalWeeks}"
+          oninput="updateMilestone(${m.id},'week',Math.max(1,Math.min(+this.value||1,state.totalWeeks)))"
+          style="text-align:center">
+      </div>
+      <div style="width:28px">
+        <input type="color" value="${m.color}"
+          oninput="updateMilestone(${m.id},'color',this.value)">
+      </div>
+      <div style="width:24px">
+        <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeMilestone(${m.id})">✕</button>
+      </div>
+    `;
+    list.appendChild(row);
+  });
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
