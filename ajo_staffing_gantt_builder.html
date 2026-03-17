@@ -364,8 +364,9 @@ input[type=checkbox] {
   border-radius: 3px; display: inline-block; line-height: 1.5;
   color: var(--bci-blue-700); background: var(--bci-blue-100);
 }
-.fte-badge.fte-part { color: var(--bci-amber-700); background: var(--bci-amber-100); }
-.fte-badge.fte-low  { color: var(--bci-500); background: var(--bci-100); }
+.fte-badge.fte-part     { color: var(--bci-amber-700); background: var(--bci-amber-100); }
+.fte-badge.fte-low      { color: var(--bci-500); background: var(--bci-100); }
+.fte-badge.fte-advisory { color: #7C3AED; background: #EDE9FE; }
 
 /* ── Gantt chart area ── */
 .gantt-wrap svg { display: block; width: 100%; }
@@ -832,6 +833,7 @@ input[type=checkbox] {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const ROLE_ROSTER = [
   // Delivery & PMO
+  'Delivery Director',
   'Engagement Lead',
   'Program Manager',
   'PMO Analyst',
@@ -986,7 +988,8 @@ function formatCost(val, currency) {
 function fteBadgeClass(hrs) {
   if (hrs >= 40) return '';
   if (hrs >= 20) return 'fte-part';
-  return 'fte-low';
+  if (hrs >= 10) return 'fte-low';
+  return 'fte-advisory';
 }
 
 function wkLabel(wk) {
@@ -1422,9 +1425,10 @@ function renderEditor() {
       </td>
       <td class="col-hrs">
         <select onchange="updateResource(${r.id},'hrs',+this.value)">
-          <option value="40"${r.hrs >= 40 ? ' selected' : ''}>100%</option>
-          <option value="20"${r.hrs >= 20 && r.hrs < 40 ? ' selected' : ''}>50%</option>
-          <option value="10"${r.hrs < 20 ? ' selected' : ''}>25%</option>
+          <option value="40"${r.hrs === 40 ? ' selected' : ''}>100%</option>
+          <option value="20"${r.hrs === 20 ? ' selected' : ''}>50%</option>
+          <option value="10"${r.hrs === 10 ? ' selected' : ''}>25%</option>
+          <option value="5"${r.hrs === 5 ? ' selected' : ''}>Advisory</option>
         </select>
       </td>
       <td class="col-fte" style="text-align:center">
@@ -1500,9 +1504,10 @@ function renderEditor() {
           <input type="number" value="${sp.week}" min="${r.start+1}" max="${r.end}" style="width:50px"
             oninput="updateSplit(${r.id},${spi},'week',Math.max(${r.start+1},Math.min(+this.value||${r.start+1},${r.end})))">
           <select onchange="updateSplit(${r.id},${spi},'hrs',+this.value)">
-            <option value="40"${sp.hrs>=40?' selected':''}>100%</option>
-            <option value="20"${sp.hrs>=20&&sp.hrs<40?' selected':''}>50%</option>
-            <option value="10"${sp.hrs<20?' selected':''}>25%</option>
+            <option value="40"${sp.hrs===40?' selected':''}>100%</option>
+            <option value="20"${sp.hrs===20?' selected':''}>50%</option>
+            <option value="10"${sp.hrs===10?' selected':''}>25%</option>
+            <option value="5"${sp.hrs===5?' selected':''}>Advisory</option>
           </select>
           <button class="btn btn-danger-ghost btn-icon btn-sm" style="width:16px;height:16px;padding:0;font-size:9px" onclick="removeSplit(${r.id},${spi})">✕</button>
         </div>`;
@@ -1903,7 +1908,8 @@ function renderChart() {
       'font-family': 'var(--font-sans,system-ui,sans-serif)'
     }, typeObj.name.slice(0, 3).toUpperCase()));
 
-    const hrsColor = isFull ? '#475569' : isPart ? '#D97706' : '#94A3B8';
+    const isAdv = r.hrs < 10;
+    const hrsColor = isFull ? '#475569' : isPart ? '#D97706' : isAdv ? '#7C3AED' : '#94A3B8';
     svg.appendChild(el('text', {
       x: COL_HRS_X, y: y + ROW_H / 2, 'text-anchor': 'end', 'dominant-baseline': 'central',
       'font-size': '8.5', 'font-weight': isFull ? '400' : '600', fill: hrsColor,
@@ -1919,9 +1925,9 @@ function renderChart() {
       const sE  = Math.max(sS, Math.min(seg.end, TW));
       const bx  = wkX(sS);
       const bw  = wkX(sE + 1) - bx;
-      const isF = seg.hrs >= 40, isP = seg.hrs >= 20 && seg.hrs < 40;
-      const segOp = isF ? '0.85' : isP ? '0.52' : '0.28';
-      const segH  = isF ? BAR_H : isP ? Math.round(BAR_H * 0.75) : Math.round(BAR_H * 0.5);
+      const isF = seg.hrs >= 40, isP = seg.hrs >= 20 && seg.hrs < 40, isL = seg.hrs >= 10 && seg.hrs < 20;
+      const segOp = isF ? '0.85' : isP ? '0.52' : isL ? '0.28' : '0.18';
+      const segH  = isF ? BAR_H : isP ? Math.round(BAR_H * 0.75) : isL ? Math.round(BAR_H * 0.5) : Math.round(BAR_H * 0.35);
       const segOff = Math.round((BAR_H - segH) / 2);
       // No radius on joining edges between adjacent segments
       const rx = (si === 0 || si === segs.length - 1) ? BAR_R : 0;
@@ -2116,6 +2122,10 @@ function renderChart() {
       <div class="legend-swatch" style="background:${refColor};opacity:0.28;height:4px;margin:2px 0"></div>
       25% allocation
     </div>
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:${refColor};opacity:0.18;height:3px;margin:2.5px 0"></div>
+      Advisory (5 hrs)
+    </div>
   `;
 
   legend.innerHTML = typeItems + '<div class="legend-sep"></div>' + allocItems;
@@ -2254,10 +2264,12 @@ function exportExcel() {
     const s  = sid(t.id);
     const l1 = hexLight(t.color, 55);
     const l2 = hexLight(t.color, 110);
+    const l3 = hexLight(t.color, 155);
     return [
-      mkStyle(`t_${s}_full`, { align:'ss:Horizontal="Center" ss:Vertical="Center"', borders: bdr(t.color,['Right']), font:`ss:Color="#FFFFFF" ss:Size="8" ss:FontName="Calibri"`, interior:`ss:Color="${t.color}" ss:Pattern="Solid"` }),
-      mkStyle(`t_${s}_part`, { align:'ss:Horizontal="Center" ss:Vertical="Center"', borders: bdr(l1,['Right']),    font:`ss:Color="#475569" ss:Size="8" ss:FontName="Calibri"`, interior:`ss:Color="${l1}" ss:Pattern="Solid"` }),
-      mkStyle(`t_${s}_low`,  { align:'ss:Horizontal="Center" ss:Vertical="Center"', borders: bdr(l2,['Right']),    font:`ss:Color="#94A3B8" ss:Size="8" ss:FontName="Calibri"`, interior:`ss:Color="${l2}" ss:Pattern="Solid"` }),
+      mkStyle(`t_${s}_full`,     { align:'ss:Horizontal="Center" ss:Vertical="Center"', borders: bdr(t.color,['Right']), font:`ss:Color="#FFFFFF" ss:Size="8" ss:FontName="Calibri"`, interior:`ss:Color="${t.color}" ss:Pattern="Solid"` }),
+      mkStyle(`t_${s}_part`,     { align:'ss:Horizontal="Center" ss:Vertical="Center"', borders: bdr(l1,['Right']),    font:`ss:Color="#475569" ss:Size="8" ss:FontName="Calibri"`, interior:`ss:Color="${l1}" ss:Pattern="Solid"` }),
+      mkStyle(`t_${s}_low`,      { align:'ss:Horizontal="Center" ss:Vertical="Center"', borders: bdr(l2,['Right']),    font:`ss:Color="#94A3B8" ss:Size="8" ss:FontName="Calibri"`, interior:`ss:Color="${l2}" ss:Pattern="Solid"` }),
+      mkStyle(`t_${s}_advisory`, { align:'ss:Horizontal="Center" ss:Vertical="Center"', borders: bdr(l3,['Right']),    font:`ss:Color="#A78BFA" ss:Size="8" ss:FontName="Calibri"`, interior:`ss:Color="${l3}" ss:Pattern="Solid"` }),
     ].join('');
   }).join('');
 
@@ -2370,7 +2382,7 @@ function exportExcel() {
       if (r.start <= wk && r.end >= wk) {
         const seg    = segs.find(s => s.start <= wk && s.end >= wk);
         const segHrs = seg ? seg.hrs : r.hrs;
-        const segLvl = segHrs >= 40 ? 'full' : segHrs >= 20 ? 'part' : 'low';
+        const segLvl = segHrs >= 40 ? 'full' : segHrs >= 20 ? 'part' : segHrs >= 10 ? 'low' : 'advisory';
         const ts     = `t_${sid(typeObj.id)}_${segLvl}`;
         ganttTable += sc(ts, wk===r.start && r.tag ? r.tag.slice(0,4).toUpperCase() : '');
       } else {
