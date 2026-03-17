@@ -884,6 +884,38 @@ const ROLE_ROSTER = [
   'Support Analyst',
 ];
 
+const ROLE_DESCRIPTIONS = {
+  'Delivery Director':      'Executive oversight, stakeholder alignment, and delivery governance across all workstreams.',
+  'Engagement Lead':        'Day-to-day engagement management, client relationship, and delivery coordination.',
+  'Program Manager':        'Program planning, status reporting, risk management, and cross-team coordination.',
+  'PMO Analyst':            'Project tracking, documentation, reporting, and administrative support.',
+  'Scrum Master':           'Agile ceremony facilitation, impediment removal, and team velocity management.',
+  'Solution Architect':     'End-to-end solution design, integration patterns, and technical decision-making.',
+  'AEP Architect':          'Adobe Experience Platform architecture, data model design, and schema strategy.',
+  'Integration Architect':  'System integration design, API strategy, and middleware architecture.',
+  'AEP Engineer':           'AEP platform configuration, data ingestion, identity resolution, and segment building.',
+  'RTCDP Specialist':       'Real-Time CDP activation, audience management, and destination configuration.',
+  'Data Engineer':          'Data pipeline development, ETL/ELT processes, and data quality management.',
+  'Data Modeler':           'XDM schema design, data modeling, and field group management.',
+  'AJO Lead':               'Adobe Journey Optimizer strategy, journey design, and campaign orchestration.',
+  'AJO SME':                'AJO configuration, content authoring, and channel-specific optimization.',
+  'AJO Engineer':           'Journey build, API integrations, and AJO technical configuration.',
+  'Campaign Manager':       'Campaign planning, execution, audience targeting, and performance analysis.',
+  'Content Strategist':     'Content taxonomy, template strategy, personalization planning, and brand alignment.',
+  'Business Analyst':       'Requirements gathering, process mapping, user stories, and acceptance criteria.',
+  'Functional Consultant':  'Business process design, gap analysis, and solution configuration.',
+  'Change Management Lead': 'Change impact assessment, stakeholder communication, and adoption planning.',
+  'QA Lead':                'Test strategy, test planning, defect management, and quality governance.',
+  'QA Engineer':            'Test case development, execution, automation, and regression testing.',
+  'Performance Tester':     'Load testing, performance benchmarking, and optimization recommendations.',
+  'DevOps Engineer':        'CI/CD pipelines, infrastructure automation, and deployment management.',
+  'Integration Engineer':   'API development, webhook configuration, and system connectivity.',
+  'Frontend Developer':     'UI development, component building, and front-end integration.',
+  'Backend Developer':      'Server-side development, API implementation, and database management.',
+  'Training Lead':          'Training program design, material creation, and end-user enablement.',
+  'Support Analyst':        'Operational support, incident triage, and post-launch monitoring.',
+};
+
 let uid = 1000;
 
 const state = {
@@ -1164,39 +1196,6 @@ function renderTeamTable() {
   const table = document.getElementById('team-table-body');
   if (!table) return;
   const active = state.resources.filter(r => r.active);
-
-  // Build role descriptions map — a default description per ROLE_ROSTER role
-  const ROLE_DESCRIPTIONS = {
-    'Delivery Director':      'Executive oversight, stakeholder alignment, and delivery governance across all workstreams.',
-    'Engagement Lead':        'Day-to-day engagement management, client relationship, and delivery coordination.',
-    'Program Manager':        'Program planning, status reporting, risk management, and cross-team coordination.',
-    'PMO Analyst':            'Project tracking, documentation, reporting, and administrative support.',
-    'Scrum Master':           'Agile ceremony facilitation, impediment removal, and team velocity management.',
-    'Solution Architect':     'End-to-end solution design, integration patterns, and technical decision-making.',
-    'AEP Architect':          'Adobe Experience Platform architecture, data model design, and schema strategy.',
-    'Integration Architect':  'System integration design, API strategy, and middleware architecture.',
-    'AEP Engineer':           'AEP platform configuration, data ingestion, identity resolution, and segment building.',
-    'RTCDP Specialist':       'Real-Time CDP activation, audience management, and destination configuration.',
-    'Data Engineer':          'Data pipeline development, ETL/ELT processes, and data quality management.',
-    'Data Modeler':           'XDM schema design, data modeling, and field group management.',
-    'AJO Lead':               'Adobe Journey Optimizer strategy, journey design, and campaign orchestration.',
-    'AJO SME':                'AJO configuration, content authoring, and channel-specific optimization.',
-    'AJO Engineer':           'Journey build, API integrations, and AJO technical configuration.',
-    'Campaign Manager':       'Campaign planning, execution, audience targeting, and performance analysis.',
-    'Content Strategist':     'Content taxonomy, template strategy, personalization planning, and brand alignment.',
-    'Business Analyst':       'Requirements gathering, process mapping, user stories, and acceptance criteria.',
-    'Functional Consultant':  'Business process design, gap analysis, and solution configuration.',
-    'Change Management Lead': 'Change impact assessment, stakeholder communication, and adoption planning.',
-    'QA Lead':                'Test strategy, test planning, defect management, and quality governance.',
-    'QA Engineer':            'Test case development, execution, automation, and regression testing.',
-    'Performance Tester':     'Load testing, performance benchmarking, and optimization recommendations.',
-    'DevOps Engineer':        'CI/CD pipelines, infrastructure automation, and deployment management.',
-    'Integration Engineer':   'API development, webhook configuration, and system connectivity.',
-    'Frontend Developer':     'UI development, component building, and front-end integration.',
-    'Backend Developer':      'Server-side development, API implementation, and database management.',
-    'Training Lead':          'Training program design, material creation, and end-user enablement.',
-    'Support Analyst':        'Operational support, incident triage, and post-launch monitoring.',
-  };
 
   // Group active resources — use note as override for responsibilities
   let html = `<thead><tr>
@@ -2526,7 +2525,24 @@ function exportExcel() {
     detTable += `</Row>\n`;
   });
 
-  // ── Sheet 4: Summary ──
+  // ── Sheet 4: Proposed Team ──
+  let teamTable = `<Column ss:Width="160"/><Column ss:Width="90"/><Column ss:Width="300"/><Column ss:Width="55"/><Column ss:Width="100"/>\n`;
+  teamTable += `<Row ss:Height="24">${['Role','Type','Responsibilities','FTE','Weeks'].map(h => sc('s_hdr',h)).join('')}</Row>\n`;
+  active.forEach((r, i) => {
+    const typeObj = state.types.find(t => t.id === r.type) || { name: r.type };
+    const responsibilities = r.note || ROLE_DESCRIPTIONS[r.role] || '';
+    const fteLabel = Math.round(r.hrs / 40 * 100) + '%';
+    const weekRange = state.startDate
+      ? `${wkLabel(r.start)} – ${wkLabel(r.end)}`
+      : `W${r.start} – W${r.end}`;
+    const rs = i % 2 === 0 ? 's_r0' : 's_r1';
+    const ns = i % 2 === 0 ? 's_n0' : 's_n1';
+    teamTable += `<Row ss:Height="20">
+      ${sc(rs, r.role)}${sc(rs, typeObj.name)}${sc(rs, responsibilities)}${sc(ns, fteLabel)}${sc(rs, weekRange)}
+    </Row>\n`;
+  });
+
+  // ── Sheet 5: Summary ──
   let peakFTE = 0;
   for (let wk = 1; wk <= TW; wk++) {
     const fte = active.filter(r=>r.start<=wk&&r.end>=wk).reduce((s,r)=>s+r.hrs/40,0);
@@ -2621,6 +2637,14 @@ function exportExcel() {
       <x:Pane><x:Number>1</x:Number></x:Pane>
       <x:Pane><x:Number>0</x:Number></x:Pane>
     </x:Panes>
+  </x:WorksheetOptions>
+</Worksheet>
+<Worksheet ss:Name="Proposed Team">
+  <Table>${teamTable}</Table>
+  <x:WorksheetOptions>
+    <x:FreezePanes/><x:FrozenNoSplit/>
+    <x:SplitHorizontal>1</x:SplitHorizontal><x:TopRowBottomPane>1</x:TopRowBottomPane>
+    <x:ActivePane>2</x:ActivePane><x:Panes><x:Pane><x:Number>2</x:Number></x:Pane></x:Panes>
   </x:WorksheetOptions>
 </Worksheet>
 <Worksheet ss:Name="Summary">
