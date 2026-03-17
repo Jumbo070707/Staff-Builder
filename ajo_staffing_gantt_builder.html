@@ -2545,7 +2545,11 @@ function exportExcel() {
   // ── Sheet 5: Summary ──
   let peakFTE = 0;
   for (let wk = 1; wk <= TW; wk++) {
-    const fte = active.filter(r=>r.start<=wk&&r.end>=wk).reduce((s,r)=>s+r.hrs/40,0);
+    let fte = 0;
+    active.forEach(r => {
+      const seg = buildSegments(r).find(s => s.start <= wk && s.end >= wk);
+      if (seg) fte += seg.hrs / 40;
+    });
     if (fte > peakFTE) peakFTE = fte;
   }
   const totalCostVal = active.reduce((s,r)=>s+resourceCost(r),0);
