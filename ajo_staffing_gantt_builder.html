@@ -2235,24 +2235,93 @@ function exportExcel() {
     }
     const r       = item.r;
     const typeObj = state.types.find(t=>t.id===r.type) || {id:'unk',name:r.type,color:'#94A3B8'};
-    const isFull  = r.hrs >= 40;
-    const isPart  = r.hrs >= 20 && r.hrs < 40;
-    const lvl     = isFull ? 'full' : isPart ? 'part' : 'low';
-    const ts      = `t_${sid(typeObj.id)}_${lvl}`;
+    const segs    = buildSegments(r);
+    const tsId    = sid(typeObj.id);
     const rs      = rowI % 2 === 0 ? 's_r0' : 's_r1';
     rowI++;
     ganttTable += `<Row ss:Height="16">
       ${sc(rs,r.role)}${sc(rs,typeObj.name)}${sc('s_wk',Math.round(r.hrs/40*100)+'%')}`;
     for (let wk = 1; wk <= TW; wk++) {
-      if (r.start <= wk && r.end >= wk)
-        ganttTable += sc(ts, wk===r.start && r.tag ? r.tag.slice(0,4).toUpperCase() : '');
-      else
+      if (r.start <= wk && r.end >= wk) {
+        const seg = segs.find(s => wk >= s.start && wk <= s.end);
+        const hrs = seg ? seg.hrs : r.hrs;
+        const lvl = hrs >= 40 ? 'full' : hrs >= 20 ? 'part' : 'low';
+        ganttTable += sc(`t_${tsId}_${lvl}`, wk===r.start && r.tag ? r.tag.slice(0,4).toUpperCase() : '');
+      } else
         ganttTable += ec('s_e');
     }
     ganttTable += `</Row>\n`;
   });
 
-  // ── Sheet 3: Summary ──
+  // ── Sheet 3: Detail (roles × weeks with hours) ──
+  // Build month spans from startDate
+  const detColW = 28;
+  let detTable = `<Column ss:Width="90"/><Column ss:Width="200"/>\n`;
+  for (let w = 1; w <= TW; w++) detTable += `<Column ss:Width="${detColW}"/>\n`;
+
+  // Row 1: Month header
+  if (state.startDate) {
+    detTable += `<Row ss:Height="20">${ec('s_hdr')}${ec('s_hdr')}`;
+    let mw = 1;
+    while (mw <= TW) {
+      const d0 = new Date(state.startDate + 'T00:00:00');
+      d0.setDate(d0.getDate() + (mw - 1) * 7);
+      const mon = d0.getMonth();
+      let span = 0;
+      for (let wk = mw; wk <= TW; wk++) {
+        const dx = new Date(state.startDate + 'T00:00:00');
+        dx.setDate(dx.getDate() + (wk - 1) * 7);
+        if (dx.getMonth() === mon) span++; else break;
+      }
+      const mName = d0.toLocaleDateString('en-US', { month: 'long' });
+      detTable += sc('s_hdr', mName, span - 1);
+      mw += span;
+    }
+    detTable += `</Row>\n`;
+  }
+
+  // Row 2: Phase header
+  detTable += `<Row ss:Height="22">${sc('s_hdr_l','Phase')}${ec('s_hdr')}`;
+  let dw = 1;
+  while (dw <= TW) {
+    const pi = wkPhase[dw];
+    if (pi >= 0) {
+      const end = Math.min(TW, state.phases[pi].end);
+      detTable += sc(`ph_${pi}`, state.phases[pi].name, end - dw);
+      dw = end + 1;
+    } else {
+      detTable += ec('s_hdr'); dw++;
+    }
+  }
+  detTable += `</Row>\n`;
+
+  // Row 3: Column headers + week numbers
+  detTable += `<Row ss:Height="16">${sc('s_hdr','Roles')}${sc('s_hdr','Mission')}`;
+  for (let wk = 1; wk <= TW; wk++) detTable += sc('s_wk', String(wk));
+  detTable += `</Row>\n`;
+
+  // Data rows: one per active resource
+  active.forEach((r, i) => {
+    const rs = i % 2 === 0 ? 's_r0' : 's_r1';
+    const ns = i % 2 === 0 ? 's_n0' : 's_n1';
+    const segs = buildSegments(r);
+    const label = r.tag ? `${r.tag}` : r.role;
+    const mission = r.note || r.role;
+    detTable += `<Row ss:Height="16">${sc(rs, label)}${sc(rs, mission)}`;
+    for (let wk = 1; wk <= TW; wk++) {
+      if (wk >= r.start && wk <= r.end) {
+        // Find hrs for this week from segments
+        const seg = segs.find(s => wk >= s.start && wk <= s.end);
+        const hrs = seg ? seg.hrs : 0;
+        detTable += nc(ns, hrs);
+      } else {
+        detTable += nc(ns, 0);
+      }
+    }
+    detTable += `</Row>\n`;
+  });
+
+  // ── Sheet 4: Summary ──
   let peakFTE = 0;
   for (let wk = 1; wk <= TW; wk++) {
     const fte = active.filter(r=>r.start<=wk&&r.end>=wk).reduce((s,r)=>s+r.hrs/40,0);
@@ -2330,6 +2399,21 @@ function exportExcel() {
       <x:Pane><x:Number>3</x:Number></x:Pane>
       <x:Pane><x:Number>2</x:Number><x:ActiveRow>2</x:ActiveRow></x:Pane>
       <x:Pane><x:Number>1</x:Number><x:ActiveCol>3</x:ActiveCol></x:Pane>
+      <x:Pane><x:Number>0</x:Number></x:Pane>
+    </x:Panes>
+  </x:WorksheetOptions>
+</Worksheet>
+<Worksheet ss:Name="Detail">
+  <Table>${detTable}</Table>
+  <x:WorksheetOptions>
+    <x:FreezePanes/><x:FrozenNoSplit/>
+    <x:SplitHorizontal>${state.startDate ? 3 : 2}</x:SplitHorizontal><x:SplitVertical>2</x:SplitVertical>
+    <x:TopRowBottomPane>${state.startDate ? 3 : 2}</x:TopRowBottomPane><x:LeftColumnRightPane>2</x:LeftColumnRightPane>
+    <x:ActivePane>0</x:ActivePane>
+    <x:Panes>
+      <x:Pane><x:Number>3</x:Number></x:Pane>
+      <x:Pane><x:Number>2</x:Number></x:Pane>
+      <x:Pane><x:Number>1</x:Number></x:Pane>
       <x:Pane><x:Number>0</x:Number></x:Pane>
     </x:Panes>
   </x:WorksheetOptions>
