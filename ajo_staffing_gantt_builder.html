@@ -2601,12 +2601,11 @@ function exportExcel() {
   // ── Sheet 5: Summary ──
   let peakFTE = 0;
   for (let wk = 1; wk <= TW; wk++) {
-    const fte = active.reduce((s, r) => {
-      if (r.start > wk || r.end < wk) return s;
-      const segs = buildSegments(r);
-      const seg  = segs.find(s => s.start <= wk && s.end >= wk);
-      return s + (seg ? seg.hrs : r.hrs) / 40;
-    }, 0);
+    let fte = 0;
+    active.forEach(r => {
+      const seg = buildSegments(r).find(s => s.start <= wk && s.end >= wk);
+      if (seg) fte += seg.hrs / 40;
+    });
     if (fte > peakFTE) peakFTE = fte;
   }
   const totalCostVal = active.reduce((s,r)=>s+resourceCost(r),0);
