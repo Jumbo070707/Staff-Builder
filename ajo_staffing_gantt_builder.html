@@ -125,10 +125,11 @@ body { font-family: var(--font); background: var(--bg); color: var(--text-1); li
 /* ── Header ── */
 .app-header {
   background: linear-gradient(135deg, var(--bci-950) 0%, var(--bci-900) 60%, #0F1F3D 100%);
-  padding: 18px 24px 16px;
-  display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
+  padding: 14px 20px;
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
   position: relative; overflow: hidden;
+  transition: padding 0.22s ease;
 }
 .app-header::after {
   content: '';
@@ -137,8 +138,32 @@ body { font-family: var(--font); background: var(--bg); color: var(--text-1); li
   background: radial-gradient(ellipse at 80% 50%, rgba(59,130,246,0.08) 0%, transparent 70%);
 }
 
+/* Collapsible resources body */
+.resources-collapsible {
+  overflow: hidden;
+  max-height: 2000px;
+  opacity: 1;
+  transition: max-height 0.28s ease, opacity 0.2s ease;
+}
+.resources-card.collapsed .resources-collapsible {
+  max-height: 0;
+  opacity: 0;
+}
+
+/* Resources collapse toggle button */
+.resources-collapse-btn {
+  background: transparent; border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 6px;
+  color: var(--text-3);
+  transition: background 0.15s, color 0.15s, transform 0.22s ease;
+  flex-shrink: 0; margin-left: 4px;
+}
+.resources-collapse-btn:hover { background: var(--surface-2); color: var(--text-1); }
+.resources-card.collapsed .resources-collapse-btn { transform: rotate(180deg); }
+
 .header-left { flex: 1; min-width: 0; }
-.header-brand { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.header-brand { display: flex; align-items: center; gap: 10px; }
 
 .brand-logo {
   width: 30px; height: 30px; flex-shrink: 0;
@@ -303,8 +328,29 @@ input[type=checkbox] {
 .col-rate    { width: 80px; }
 .col-total   { width: 90px; text-align: right; }
 .col-note    { min-width: 110px; }
-.col-order   { width: 52px; white-space: nowrap; }
-.col-del     { width: 32px; text-align: center; }
+.col-actions { width: 32px; text-align: center; position: relative; }
+
+/* Row action dropdown menu */
+.row-menu-wrap { position: relative; display: inline-block; }
+.row-menu {
+  display: none; position: absolute; right: 0; top: 100%;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+  min-width: 148px; z-index: 9999; overflow: hidden;
+  padding: 4px 0;
+}
+.row-menu.open { display: block; }
+.row-menu-item {
+  display: flex; align-items: center; gap: 7px;
+  width: 100%; padding: 6px 12px; border: none; background: none;
+  font-size: 12px; color: var(--text-1); text-align: left; cursor: pointer;
+  transition: background 0.12s;
+}
+.row-menu-item:hover { background: var(--surface-2); }
+.row-menu-item:disabled { color: var(--text-3); cursor: default; pointer-events: none; }
+.row-menu-item.danger { color: var(--danger); }
+.row-menu-item.danger:hover { background: rgba(239,68,68,0.08); }
+.row-menu-sep { height: 1px; background: var(--border); margin: 3px 0; }
 
 .cost-badge {
   font-size: 10px; font-weight: 600; padding: 1px 5px;
@@ -402,7 +448,7 @@ input[type=checkbox] {
 <div class="app">
 
   <!-- ══════════ HEADER ══════════ -->
-  <header class="app-header">
+  <header class="app-header" id="app-header">
     <div class="header-left">
       <div class="header-brand">
         <div class="brand-logo">
@@ -415,14 +461,16 @@ input[type=checkbox] {
         </div>
         <span class="brand-wordmark"><span>BAi</span>Ci · Staff Builder</span>
       </div>
-      <input class="proj-title-input" id="proj-title"
-        value="AJO Implementation — Resource Staffing View"
-        oninput="state.title=this.value; scheduleChartRender(300)"
-        placeholder="Project name…">
-      <input class="proj-subtitle-input" id="proj-subtitle"
-        value="32-week engagement · Onshore &amp; offshore · AEP migration"
-        oninput="state.subtitle=this.value; scheduleChartRender(300)"
-        placeholder="Project subtitle…">
+      <div style="margin-top:6px">
+        <input class="proj-title-input" id="proj-title"
+          value="AJO Implementation — Resource Staffing View"
+          oninput="state.title=this.value; scheduleChartRender(300)"
+          placeholder="Project name…">
+        <input class="proj-subtitle-input" id="proj-subtitle"
+          value="32-week engagement · Onshore &amp; offshore · AEP migration"
+          oninput="state.subtitle=this.value; scheduleChartRender(300)"
+          placeholder="Project subtitle…">
+      </div>
     </div>
     <div class="header-stats">
       <div class="stat">
@@ -499,36 +547,45 @@ input[type=checkbox] {
   <div class="main">
 
     <!-- Resource Editor -->
-    <div class="card">
+    <div class="card resources-card" id="resources-card">
       <div class="card-header">
-        <span class="card-title">Resources</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="card-title">Resources</span>
+          <button class="resources-collapse-btn" id="resources-collapse-btn"
+            onclick="toggleResourcesCollapse()" title="Collapse resources">
+            <svg width="13" height="13" viewBox="0 0 14 14" fill="none">
+              <path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
         <div style="display:flex;gap:6px;align-items:center">
           <span class="info-pill" id="active-count-pill">15 active</span>
           <button class="btn btn-sm btn-ghost" onclick="addRow()">+ Add role</button>
           <button class="btn btn-sm" onclick="clearBoard()" style="color:var(--danger);border-color:var(--danger);background:transparent" onmouseover="this.style.background='var(--bci-red-100)'" onmouseout="this.style.background='transparent'">Clear board</button>
         </div>
       </div>
-      <div class="resource-table-wrap">
-        <table class="resource-table">
-          <thead>
-            <tr>
-              <th class="col-toggle" title="Active">✓</th>
-              <th class="col-role">Role / Name</th>
-              <th class="col-type">Type</th>
-              <th class="col-tag">Tag</th>
-              <th class="col-start">Start wk</th>
-              <th class="col-end">End wk</th>
-              <th class="col-hrs">FTE %</th>
-              <th class="col-fte"></th>
-              <th class="col-rate" id="th-rate" style="display:none">Rate ($/h)</th>
-              <th class="col-total" id="th-total" style="display:none">Total Cost</th>
-              <th class="col-note">Annotation</th>
-              <th class="col-order"></th>
-              <th class="col-del"></th>
-            </tr>
-          </thead>
-          <tbody id="resource-tbody"></tbody>
-        </table>
+      <div class="resources-collapsible" id="resources-collapsible">
+        <div class="resource-table-wrap">
+          <table class="resource-table">
+            <thead>
+              <tr>
+                <th class="col-toggle" title="Active">✓</th>
+                <th class="col-role">Role / Name</th>
+                <th class="col-type">Type</th>
+                <th class="col-tag">Tag</th>
+                <th class="col-start">Start wk</th>
+                <th class="col-end">End wk</th>
+                <th class="col-hrs">FTE %</th>
+                <th class="col-fte"></th>
+                <th class="col-rate" id="th-rate" style="display:none">Rate ($/h)</th>
+                <th class="col-total" id="th-total" style="display:none">Total Cost</th>
+                <th class="col-note">Annotation</th>
+                <th class="col-actions"></th>
+              </tr>
+            </thead>
+            <tbody id="resource-tbody"></tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -865,6 +922,7 @@ const state = {
     { id: uid++, role: 'AJO SME',            type: 'offshore', tag: 'AJO', start:  5, end: 32, hrs: 40, rate: 0, note: 'Content templates',        active: true },
     { id: uid++, role: 'AJO SME',            type: 'offshore', tag: 'AJO', start:  5, end: 28, hrs: 40, rate: 0, note: 'Journey config',           active: true },
   ],
+  resourcesCollapsed: false,
 };
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -883,6 +941,17 @@ function toggleDarkMode() {
   state.darkMode = !state.darkMode;
   applyTheme(state.darkMode);
   scheduleChartRender();
+}
+
+function applyResourcesCollapse(collapsed) {
+  const card = document.getElementById('resources-card');
+  if (card) card.classList.toggle('collapsed', collapsed);
+}
+
+function toggleResourcesCollapse() {
+  state.resourcesCollapsed = !state.resourcesCollapsed;
+  applyResourcesCollapse(state.resourcesCollapsed);
+  _debouncedSave();
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1161,6 +1230,37 @@ function removeRow(id) {
   scheduleFullRender();
 }
 
+function duplicateRow(id) {
+  closeRowMenu();
+  const r = state.resources.find(r => r.id === id);
+  if (!r) return;
+  const clone = JSON.parse(JSON.stringify(r));
+  clone.id = uid++;
+  const idx = state.resources.findIndex(r => r.id === id);
+  state.resources.splice(idx + 1, 0, clone);
+  scheduleFullRender();
+}
+
+let _openMenuId = null;
+function toggleRowMenu(e, id) {
+  e.stopPropagation();
+  const wasOpen = _openMenuId === id;
+  closeRowMenu();
+  if (!wasOpen) {
+    _openMenuId = id;
+    const m = document.getElementById(`row-menu-${id}`);
+    if (m) m.classList.add('open');
+  }
+}
+function closeRowMenu() {
+  if (_openMenuId !== null) {
+    const m = document.getElementById(`row-menu-${_openMenuId}`);
+    if (m) m.classList.remove('open');
+    _openMenuId = null;
+  }
+}
+document.addEventListener('click', closeRowMenu);
+
 function toggleRow(id) {
   const r = state.resources.find(r => r.id === id);
   if (r) { r.active = !r.active; scheduleFullRender(); }
@@ -1340,14 +1440,35 @@ function renderEditor() {
         <input type="text" value="${esc(r.note)}"
           oninput="updateResource(${r.id},'note',this.value)" placeholder="Annotation…">
       </td>
-      <td class="col-order">
-        <button class="btn btn-ghost btn-icon btn-sm" onclick="moveRow(${r.id},-1)" title="Move up"
-          ${isFirst ? 'disabled' : ''}>↑</button>
-        <button class="btn btn-ghost btn-icon btn-sm" onclick="moveRow(${r.id},1)" title="Move down"
-          ${isLast ? 'disabled' : ''}>↓</button>
-      </td>
-      <td class="col-del">
-        <button class="btn btn-danger-ghost btn-icon btn-sm" onclick="removeRow(${r.id})" title="Remove role">✕</button>
+      <td class="col-actions">
+        <div class="row-menu-wrap">
+          <button class="btn btn-ghost btn-icon btn-sm" onclick="toggleRowMenu(event,${r.id})" title="Actions"
+            style="font-size:15px;letter-spacing:0;line-height:1">⋮</button>
+          <div class="row-menu" id="row-menu-${r.id}">
+            <button class="row-menu-item" onclick="moveRow(${r.id},-1);closeRowMenu()" ${isFirst ? 'disabled' : ''}>
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 9V3M3 6l3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Move up
+            </button>
+            <button class="row-menu-item" onclick="moveRow(${r.id},1);closeRowMenu()" ${isLast ? 'disabled' : ''}>
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M6 3v6M3 6l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Move down
+            </button>
+            <div class="row-menu-sep"></div>
+            <button class="row-menu-item" onclick="duplicateRow(${r.id})">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.3"/><path d="M1 8V2a1 1 0 011-1h6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              Duplicate
+            </button>
+            <button class="row-menu-item" onclick="toggleSplits(${r.id});closeRowMenu()">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.3"/><line x1="6" y1="3.5" x2="6" y2="8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><line x1="3.5" y1="6" x2="8.5" y2="6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+              Allocation splits
+            </button>
+            <div class="row-menu-sep"></div>
+            <button class="row-menu-item danger" onclick="removeRow(${r.id})">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 3h8M5 3V2h2v1M5 5v4M7 5v4M3 3l.5 7h5l.5-7" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Remove
+            </button>
+          </div>
+        </div>
       </td>
     `;
     tbody.appendChild(tr);
@@ -2236,19 +2357,25 @@ function exportExcel() {
     const r       = item.r;
     const typeObj = state.types.find(t=>t.id===r.type) || {id:'unk',name:r.type,color:'#94A3B8'};
     const segs    = buildSegments(r);
-    const tsId    = sid(typeObj.id);
     const rs      = rowI % 2 === 0 ? 's_r0' : 's_r1';
+    // FTE label: show range if splits change allocation, otherwise flat value
+    const allHrs  = segs.map(s=>s.hrs);
+    const fteLabel = allHrs.every(h=>h===allHrs[0])
+      ? Math.round(allHrs[0]/40*100)+'%'
+      : Math.round(Math.min(...allHrs)/40*100)+'–'+Math.round(Math.max(...allHrs)/40*100)+'%';
     rowI++;
     ganttTable += `<Row ss:Height="16">
-      ${sc(rs,r.role)}${sc(rs,typeObj.name)}${sc('s_wk',Math.round(r.hrs/40*100)+'%')}`;
+      ${sc(rs,r.role)}${sc(rs,typeObj.name)}${sc('s_wk',fteLabel)}`;
     for (let wk = 1; wk <= TW; wk++) {
       if (r.start <= wk && r.end >= wk) {
-        const seg = segs.find(s => wk >= s.start && wk <= s.end);
-        const hrs = seg ? seg.hrs : r.hrs;
-        const lvl = hrs >= 40 ? 'full' : hrs >= 20 ? 'part' : 'low';
-        ganttTable += sc(`t_${tsId}_${lvl}`, wk===r.start && r.tag ? r.tag.slice(0,4).toUpperCase() : '');
-      } else
+        const seg    = segs.find(s => s.start <= wk && s.end >= wk);
+        const segHrs = seg ? seg.hrs : r.hrs;
+        const segLvl = segHrs >= 40 ? 'full' : segHrs >= 20 ? 'part' : 'low';
+        const ts     = `t_${sid(typeObj.id)}_${segLvl}`;
+        ganttTable += sc(ts, wk===r.start && r.tag ? r.tag.slice(0,4).toUpperCase() : '');
+      } else {
         ganttTable += ec('s_e');
+      }
     }
     ganttTable += `</Row>\n`;
   });
@@ -2324,7 +2451,12 @@ function exportExcel() {
   // ── Sheet 4: Summary ──
   let peakFTE = 0;
   for (let wk = 1; wk <= TW; wk++) {
-    const fte = active.filter(r=>r.start<=wk&&r.end>=wk).reduce((s,r)=>s+r.hrs/40,0);
+    const fte = active.reduce((s, r) => {
+      if (r.start > wk || r.end < wk) return s;
+      const segs = buildSegments(r);
+      const seg  = segs.find(s => s.start <= wk && s.end >= wk);
+      return s + (seg ? seg.hrs : r.hrs) / 40;
+    }, 0);
     if (fte > peakFTE) peakFTE = fte;
   }
   const totalCostVal = active.reduce((s,r)=>s+resourceCost(r),0);
@@ -2584,6 +2716,7 @@ document.addEventListener('keydown', e => {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 loadState();
 applyTheme(state.darkMode);
+applyResourcesCollapse(state.resourcesCollapsed);
 syncSettingsUI();
 scheduleFullRender();
 </script>
